@@ -77,7 +77,7 @@ Run each of these. An empty result is normal and only means "not this skin":
 
 Then:
 - If ro.build.version.sdk is below 21 (older than Android 5), stop: this process is not supported.
-- If ro.build.version.sdk is 37 or higher (Android 17 or newer), tell me in the summary: "On Android 17 the phone may refuse to uninstall any preinstalled app without root. If that happens, I will offer to disable them instead. Disabling stops them running, but frees RAM, not storage." Tested on a Motorola edge 70 fusion / Android 17 (SDK 37): all 67 preinstalled-app uninstalls were refused with "Failure [only root can delete system app for a particular user]", while "pm disable-user --user 0" worked.
+- If ro.build.version.sdk is 37 or higher (Android 17 or newer), tell me in the summary: "On Android 17 the phone may refuse to uninstall any preinstalled app without root. If that happens, I will offer to disable them instead. Disabling stops them running, but frees RAM, not storage." Tested on a Motorola edge 70 fusion / Android 17 (SDK 37): all 67 preinstalled-app uninstalls were refused with "Failure [only root can delete system app for a particular user]", while "pm disable-user --user 0" worked. Same on a Samsung SM-M476B / One UI 9 / Android 17: all 71 preinstalled system apps were refused the same way, only the 14 downloaded-type apps (†) uninstalled, and "pm disable-user" worked for all 71, which stayed disabled after the restart.
 - If dumpsys device_policy shows a Device Owner or Profile Owner (a work- or school-managed phone), stop and tell me to ask my IT department instead.
 - Only ever touch user 0 (the main user). Leave other users and profiles alone, such as Samsung Secure Folder (often user 150), Dual Messenger (95), or Xiaomi Second Space/Dual Apps (999).
 - Summarise: manufacturer, brand, model, Android version, skin and its version, carrier.
@@ -113,7 +113,7 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
 3. Storage details, captured now because removed apps disappear from these outputs later:
      adb shell dumpsys diskstats   ->  diskstats_before.txt
      adb shell df /data            ->  df_before.txt
-   On some phones df shows /data under another "Mounted on" path (tested on realme UI 7: /storage/emulated/0/Android/obb), and the dm-number changes after a restart. If the 1K-blocks total is the same, it is still the /data filesystem: compare its Used and Available numbers.
+   On some phones df shows /data under another "Mounted on" path (tested on realme UI 7: /storage/emulated/0/Android/obb; on Samsung One UI 9: /data/user/0), and the dm-number changes after a restart. If the 1K-blocks total is the same, it is still the /data filesystem: compare its Used and Available numbers.
 
 4. RAM "before" measurement. Do NOT restart the phone for this.
    a. adb shell uptime            ->  uptime_before.txt   (how long the phone has been on)
@@ -160,12 +160,16 @@ A1. Glance and lock-screen feeds. Match a package if ANY of these is true:
        com.taboola.mip                         Taboola lock-screen stories feed
        com.taboola.scoop                       Taboola lock-screen news panel (realme; UAD-ng Recommended)
        com.inmobi.installer                    InMobi app installer
+       com.samsung.android.dynamiclock         Samsung "Wallpaper services" (Dynamic Lock screen). On Samsung phones this is
+                                               what provides "Glance on Samsung" (UAD-ng Advanced; tested on Samsung
+                                               SM-M476B / One UI 9 / Android 17, India)
+   - Samsung: there is usually NO package with "glance" in its name. Glance is a content source inside Samsung Wallpaper services, and Settings > Lock screen > Wallpaper services lists "Glance on Samsung". So on every Samsung phone, if com.samsung.android.dynamiclock is installed, it IS the Glance feed: put it in A1, call it "Glance (via Samsung Wallpaper services)", and never report "no Glance found" while it is installed. Its UAD-ng neededBy lists com.samsung.systemui.lockstar (Good Lock's LockStar): if LockStar is installed, tell me that LockStar customisation will stop working. Tested: the package-name search found nothing, but the phone's Wallpaper services menu showed "Glance on Samsung", and disabling com.samsung.android.dynamiclock removed it.
    - Motorola and Nothing (and CMF): any package matching the rules above is Glance and goes into A1. The A1 rules apply even when the name also matches the denylist word "lockscreen".
    Action for A1: uninstall for user 0.
    EXCEPTION: if a match is rated "Unsafe" by UAD-ng, or is the lock screen itself, do NOT uninstall it. Known case: com.coloros.pictorial on OPPO, realme and OnePlus (removing it breaks lock-screen settings). For these, use the "Restrict" action (see A3), and in the final report give me the exact steps to switch the feature off in Settings (see PHASE 7).
 
 A2. Ad services, ad pop-ups and promo installers. Match packages whose UAD-ng description says they show ads, adware, promotional notifications, lock-screen ads, or install sponsored apps, and that are rated Recommended or Advanced. Known examples:
-   com.miui.msa.global, com.miui.systemAdSolution, com.miui.hybrid, com.mi.globalminusscreen, com.mi.android.globalminusscreen (Xiaomi ads and App Vault); com.heytap.browser (OPPO browser with ads); net.oneplus.push; com.aura.oobe.* and com.ironsource.appcloud.* (AppCloud / Aura); com.dti.* and com.digitalturbine.* (Digital Turbine); com.tblenovo.lenovotips; com.transsion.chromecustomization; com.android.partnerbrowsercustomizations.* ; com.facebook.appmanager, com.facebook.services, com.facebook.system; com.orange.aura.oobe (Aura under another name); on Motorola: com.motorola.ccc.notification (opt-in tips, surveys and promo notifications; system update notifications come from com.motorola.ccc.ota, which stays), com.motorola.brapps (App Box), com.motorola.paks and com.motorola.paks.notification (app bundles), android.autoinstalls.config.motorola.layout (auto-installs apps at setup).
+   com.miui.msa.global, com.miui.systemAdSolution, com.miui.hybrid, com.mi.globalminusscreen, com.mi.android.globalminusscreen (Xiaomi ads and App Vault); com.heytap.browser (OPPO browser with ads); net.oneplus.push; com.aura.oobe.* and com.ironsource.appcloud.* (AppCloud / Aura); com.dti.* and com.digitalturbine.* (Digital Turbine); com.tblenovo.lenovotips; com.transsion.chromecustomization; com.android.partnerbrowsercustomizations.* ; com.facebook.appmanager, com.facebook.services, com.facebook.system; com.orange.aura.oobe (Aura under another name); on Motorola: com.motorola.ccc.notification (opt-in tips, surveys and promo notifications; system update notifications come from com.motorola.ccc.ota, which stays), com.motorola.brapps (App Box), com.motorola.paks and com.motorola.paks.notification (app bundles), android.autoinstalls.config.motorola.layout (auto-installs apps at setup); on Samsung: android.autoinstalls.config.samsung (auto-installs apps at setup), com.aura.oobe.samsung (AppCloud), com.samsung.android.mapsagent and com.samsung.android.app.omcagent (install "recommended" partner apps), com.samsung.android.service.stplatform (sponsored-app installer), com.samsung.android.mfi (Galaxy Widget, shows ads), com.samsung.discover and com.samsung.discover.sep (Discover pane that pushes app installs). All UAD-ng Recommended; tested on Samsung One UI 9 / Android 17.
    Action for A2: uninstall for user 0.
 
 A3. "Display over other apps" pop-ups. Run:
@@ -173,6 +177,7 @@ A3. "Display over other apps" pop-ups. Run:
    (If this is not supported on this Android version, say so and skip A3.)
    List every app allowed to draw over other apps that is NOT protected, NOT an accessibility service, and NOT a messaging, screen-recorder, floating-calculator, floating-notes, or video-player app I might use on purpose. Suggest restricting the rest, but only user-facing apps (ones with their own app icon, such as weather, music, cleaner, games hub or app store).
    This list is usually long and is mostly system services that need pop-ups to work: the in-call screen, battery manager, security center, permission dialogs, SystemUI, Settings, updaters, Find My Device, account and sync services, casting, and OEM frameworks (for example com.android.incallui, com.miui.powerkeeper, com.miui.securitycore, com.xiaomi.xmsf). Never restrict these. Name them in the review as "kept on purpose" so I can see you checked them.
+   A store that A4 mutes (not uninstalls) still goes in A3 if it may draw over other apps. Tested on Samsung One UI 9 / Android 17: Galaxy Store had SYSTEM_ALERT_WINDOW "allow", and restricting it to "ignore" stuck.
    Do not list an app here if it is already in A1, A2, A4 or Group B with the action "uninstall": uninstalling it removes its pop-ups anyway. If I later exclude that app from uninstalling, offer to restrict it instead.
    Action for A3: "Restrict" = first record the current mode with
      adb shell cmd appops get <package> SYSTEM_ALERT_WINDOW
@@ -193,7 +198,7 @@ A4. Preinstalled app stores that are not Google Play. Never touch com.android.ve
      If an op is not supported on this phone, say so and skip that op.
      If "appops get" prints "No operations." the op is at its default mode: record the mode as "default" (the rollback line is then "cmd appops set <package> <op> default").
      On Android 12 or older, POST_NOTIFICATION does not exist: tell me to turn off this app's notifications in Settings > Apps > <store> > Notifications, and list it in the final report.
-     On Android 13 and newer, notifications are a runtime permission, and the system may undo POST_NOTIFICATION right away (tested on HyperOS 3 / Android 16: after "set ... ignore", "get" showed "allow" again). The Phase 5 check catches this. Log it as failed, do not try another method, and give me the manual Settings steps in the final report. RUN_ANY_IN_BACKGROUND and RUN_IN_BACKGROUND did work. Same result on Motorola / Android 17 with com.indus.appstore: POST_NOTIFICATION read back "allow", and both background ops read back "ignore", also after the restart.
+     On Android 13 and newer, notifications are a runtime permission, and the system may undo POST_NOTIFICATION right away (tested on HyperOS 3 / Android 16: after "set ... ignore", "get" showed "allow" again). The Phase 5 check catches this. Log it as failed, do not try another method, and give me the manual Settings steps in the final report. RUN_ANY_IN_BACKGROUND and RUN_IN_BACKGROUND did work. Same result on Motorola / Android 17 with com.indus.appstore: POST_NOTIFICATION read back "allow", and both background ops read back "ignore", also after the restart. Same on Samsung One UI 9 / Android 17 with Galaxy Store (com.sec.android.app.samsungapps, UAD-ng Expert, neededBy Samsung Pay, so Mute, never uninstall).
 
 ---------------------------------------------------------------------
 GROUP B: OTHER BLOATWARE
@@ -209,7 +214,13 @@ PARTNER PRELOADS go into Recommended, NOT into "Probably yours". These are third
 - Casual games, for example Candy Crush, Block Blast, Vita Mahjong, Tile Explorer, Water Sort, Bubble Pop, Fruit Shooting, Word Connect, and other preinstalled games such as those from katanlabs.
 - Shopping and deals apps, for example Amazon, Meesho and Flipkart.
 - Commonly preloaded social, networking and AI apps, for example Snapchat, LinkedIn and ChatGPT.
-Mark each one "†" and write in "What I lose": "Partner preload. If you use it, exclude it. Reinstall it from the Play Store." WhatsApp, Instagram, Facebook, Netflix and Spotify stay in "Probably yours" even when they were preloaded.
+- Preloaded payment, streaming, browser and creative apps, for example Paytm (net.one97.paytm), JioHotstar (in.startv.hotstar), Firefox (org.mozilla.firefox) and Adobe Express (com.adobe.spark.post). None of these is in UAD-ng, so mark them (AI). Tested on a Samsung SM-M476B sold in India: all four were preinstalled downloaded-type apps (in packages_before_downloaded.txt) and uninstalled with "Success". The owner wanted Paytm, JioHotstar and Firefox removed, so put them in Recommended, not in "Probably yours", even though Paytm is a payment app and Firefox is a browser. Exception: if the app holds a PROTECTED role (for example Firefox is the default browser), keep it.
+Mark each one "†" and write in "What I lose": "Partner preload. If you use it, exclude it. Reinstall it from the Play Store." For Paytm, add: "You must sign in again after reinstalling." WhatsApp, Instagram, Facebook, Netflix and Spotify stay in "Probably yours" even when they were preloaded.
+
+SAMSUNG (One UI), tested on SM-M476B / One UI 9 / Android 17:
+- Put these Samsung promo apps in Recommended under "Ads and promos": com.mygalaxy and com.mygalaxy.service (My Galaxy deals hub), com.samsung.ecomm.global.in (Samsung Shop), com.samsung.android.app.spage (Samsung Free news panel), com.samsung.android.setupindiaservicestnc (nag after every update to accept data collection), com.sec.android.app.chromecustomizations, and com.samsung.sree (Samsung Global Goals, ad-funded, not in UAD-ng: AI).
+- Keep for safety even when UAD-ng says Recommended: com.sec.spp.push (Samsung push), com.samsung.android.app.updatecenter (Samsung app updates), com.samsung.android.rampart (Auto Blocker), com.hiya.star and com.samsung.android.smartcallprovider (caller ID), com.samsung.android.fmm (Find My Mobile), com.samsung.android.authfw and com.samsung.android.samsungpass* (payment and password authentication), and every package with a "knox" name part.
+- com.samsung.android.forest is Samsung's Digital Wellbeing when com.samsung.android.wellbeing is not installed: put it in "Probably yours".
 
 KEEP FOR SAFETY even when UAD-ng rates them Recommended or Advanced, and name them in the review as "left out for safety":
 - SIM, modem and calling parts: package names with a part that starts with "uim" or "sim", or that contain "atfwd", "iwlan" (VoWi-Fi), "xdivert" (call divert), "qcrilmsgtunnel", "confdialer", "vsim", "simactivate", "entitlement" or "kryten". Also com.android.stk (SIM toolkit), com.android.mms and com.android.mms.service.
@@ -323,7 +334,7 @@ Show one short summary in plain words:
 - how many changes worked, and
 - one line per failed item: app name, why it failed, and a suggested fallback.
 Fallbacks:
-- A refused uninstall of an A1 feed, an A2 ad app or a Group B app: "disable instead" (pm disable-user --user 0), unless it is rated Unsafe, is on the HARD DENYLIST, is "already off" (Phase 2), or was refused with "package is non-disable". Tested on OriginOS 6: com.vivo.magazine refused to uninstall but "pm disable-user" worked, and the lock screen then showed a normal wallpaper. Tested on Motorola / Android 17: 47 of the refused apps were disabled this way.
+- A refused uninstall of an A1 feed, an A2 ad app or a Group B app: "disable instead" (pm disable-user --user 0), unless it is rated Unsafe, is on the HARD DENYLIST, is "already off" (Phase 2), or was refused with "package is non-disable". Tested on OriginOS 6: com.vivo.magazine refused to uninstall but "pm disable-user" worked, and the lock screen then showed a normal wallpaper. Tested on Motorola / Android 17: 47 of the refused apps were disabled this way. Tested on Samsung One UI 9 / Android 17: all 71 refused apps, including Glance (com.samsung.android.dynamiclock), were disabled this way, and none turned itself back on after the restart.
   In the summary, give three numbers: apps to disable now, apps that were already off (nothing to do), and apps protected by the phone (nothing possible). Say that disabling frees RAM but not storage.
 - An A4 store: no question. It was already muted automatically (see A4). Just report it as "muted instead".
 - A restriction or mute that the system undid: give the manual Settings steps.
@@ -379,7 +390,7 @@ Then write the final report in the chat AND save it as report.md. It MUST contai
 Also report:
 - Storage freed, two ways:
   a. Measured: the change in "Used" on /data between df_before.txt and df_after.txt.
-  b. Estimated: the sum of App Size + Data Size + Cache Size for the removed packages, from diskstats_before.txt. If diskstats does not list a package, say so. On some phones (tested: HyperOS 3 / Android 16 and realme UI 7 / Android 16), diskstats has no "Package Names", "App Sizes", "App Data Sizes" or "Cache Sizes" lines at all, only partition totals. Then write "not measured: diskstats on this phone has no per-app sizes".
+  b. Estimated: the sum of App Size + Data Size + Cache Size for the removed packages, from diskstats_before.txt. If diskstats does not list a package, say so. On some phones (tested: HyperOS 3 / Android 16, realme UI 7 / Android 16 and Samsung One UI 9 / Android 17), diskstats has no "Package Names", "App Sizes", "App Data Sizes" or "Cache Sizes" lines at all, only partition totals. Then write "not measured: diskstats on this phone has no per-app sizes".
   Explain that preinstalled apps live on the read-only system partition, so their installation files stay on the phone. Only their updates, data and cache on /data are freed, so the storage freed can be small. That is expected.
   If apps were only disabled and none uninstalled, the storage freed is 0: disabling keeps the app's files and data. "Used" on /data can even go up a little after a restart (tested on Motorola / Android 17: +20.6 MB). Say so plainly and do not present it as a loss caused by debloating.
 - RAM freed, two ways:
@@ -392,7 +403,7 @@ Also report:
     OPPO / realme (ColorOS / realme UI):  Settings > Wallpapers & style (or Lock screen) > Lock screen magazine (or Glance) > turn off, and choose a normal lock-screen wallpaper.
     OnePlus (OxygenOS):                   Settings > Wallpapers & style (or Lock screen) > Lock screen magazine / Glance > turn off.
     Xiaomi / Redmi / POCO:                Settings > Lock screen > Glance (or Wallpaper carousel) > turn off.
-    Samsung:                              Settings > Lock screen > Glance (or Wallpaper services) > choose None.
+    Samsung:                              Settings > Lock screen > Wallpaper services ("Glance on Samsung" is listed there) > choose None.
     Motorola / Nothing:                   Settings > Lock screen (or Wallpaper) > Glance > turn off. (On Motorola / Android 17 a disabled Glance turned itself back on after the restart; see step 4.)
     vivo / iQOO (Funtouch / OriginOS):    Settings > Wallpaper & style (or Lock screen) > Lock screen poster (or Glance) > turn off, and choose a normal lock-screen wallpaper.
   Ask me to confirm on the phone that the lock screen no longer shows stories or ads.
