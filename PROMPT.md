@@ -376,6 +376,12 @@ PHASE 6: ONE RESTART, THEN VERIFY
         - checked="false": it is already off. Do nothing.
         Log each one in removal_log.csv (group A, action "switch off", result).
      d. Tap nothing else on this screen, ever. Then go home: adb shell input keyevent KEYCODE_HOME
+     e. Remove the sponsored home-screen tiles that already exist. Turning "Hot apps & hot games" off does NOT remove them (tested). On the home screen they look like folders named "Apps" and "Games" (sometimes "Hot apps" / "Hot games", often with a number badge), but in the screen XML they are nodes of package com.android.launcher with content-desc "AppLong" and "GameLong" (a real folder's content-desc starts with "Folder:"). Tapping one opens App Market's sponsored "Get 11 apps" page (com.heytap.market/com.oppo.cdo.ui.external.desktop.DeskHotAppActivity). For each one found (read the screen; if not found, swipe to the other home pages with adb shell input swipe <80% width> <half height> <20% width> <half height> 300, at most 4 pages):
+          long-press it: adb shell input swipe <x> <y> <x> <y> 1200
+          read the screen, tap the menu item with text "Remove"
+          a dialog says "The shortcut will disappear from the Home screen": tap its "Remove" button (the last node with text "Remove")
+          read the screen again and confirm the AppLong / GameLong node is gone. Log it in removal_log.csv (group A, action "remove home tile", result).
+        Never long-press or remove anything whose content-desc starts with "Folder:" or is a real app. Tested on an OPPO CPH2869 / ColorOS 17: both tiles ("Apps" and "Games", 8-badge each) were removed this way and did not come back.
      Fallback, with no tapping at all: if a title is not found (for example the phone is not in English, or this App Market version differs), the screen is locked, the settings screen did not open, or anything else is on screen (a pop-up, a sign-in or terms page), ask me to turn the two switches off by hand (App Market > Settings), and wait until I confirm.
      In the rollback files, add a comment line (REM in rollback.bat, # in rollback.sh) saying these two App Market switches were turned off and can be turned back on in App Market > Settings. List both switches and their result in the report. Tested on an OPPO CPH2869 / ColorOS 17 / Android 17 (India, App Market 26.8.60_IN): the after-install ad page came from com.heytap.market (screen com.oplus.exp.installed.rec.core.InstalledRecommendActivity), not from Phone Manager, and the "Security test for apps not from App Market" switch was on by default. Reading the screen with uiautomator and tapping that row with "input tap" turned it off, and the next screen read showed it off.
 
@@ -492,7 +498,7 @@ Read-only:
   adb shell sleep <seconds>
   adb shell am start -n com.heytap.market/com.oplus.market.setting.ExpSettingActivity   (Phase 6 step 6 only: opens App Market's settings screen; changes nothing by itself)
   adb shell uiautomator dump /sdcard/ui.xml | adb shell cat /sdcard/ui.xml | adb shell rm /sdcard/ui.xml   (Phase 6 step 6 only: reads the screen)
-  adb shell input swipe ... | adb shell input tap <x> <y> | adb shell input keyevent KEYCODE_HOME   (Phase 6 step 6 only: scroll, tap one of the two named App Market switches, go home)
+  adb shell input swipe ... | adb shell input tap <x> <y> | adb shell input keyevent KEYCODE_HOME   (Phase 6 step 6 only: scroll, tap one of the two named App Market switches, go home, and long-press / remove the "AppLong" and "GameLong" home-screen tiles)
   adb shell uptime | adb shell cat /proc/uptime
   adb shell pm list packages <package>   (check whether one package is still installed)
   adb shell pm list packages -d <package>   (check whether one package is still disabled)
