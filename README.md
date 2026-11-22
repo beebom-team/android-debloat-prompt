@@ -8,14 +8,39 @@ The AI reads your phone over a USB cable and checks every app against the commun
 
 ---
 
+## What it does by default
+
+These are pre-selected on every phone. You still confirm them once with a single reply ("go"):
+
+| | What | How |
+|---|---|---|
+| 🔒 | **Removes Glance and lock-screen "stories" feeds** on every brand: Glance on Samsung, Xiaomi, Motorola, Nothing and others; Lock Screen Magazine on OPPO, realme and OnePlus; vivo Magazine; Wallpaper Carousel; Huawei/Honor Magazine; Tecno/Infinix feeds | Uninstalls them. If the feed is built into the lock screen itself (some OPPO/realme/OnePlus phones), it blocks the feed instead and shows you the exact switch to turn it off in Settings |
+| 🚫 | **Stops ad pop-ups** | Removes ad services (for example Xiaomi MSA, App Vault, AppCloud, Digital Turbine), and blocks "display over other apps" for apps that shouldn't have it |
+| 🔕 | **Silences preinstalled app stores** that aren't Google Play (GetApps, Galaxy Store, App Market, vivo App Store and others) | Removes the store where it's safe to. Where the phone needs it (for example Samsung Pay needs Galaxy Store, or a phone without Google Play), it turns off the store's notifications and background activity instead |
+
+Everything else (other bloatware) is shown as a list, and you choose what goes.
+
+At the end, the AI gives you a **before/after report** with measured numbers:
+
+| Measure | Before | After | Change |
+|---|---|---|---|
+| Apps installed | e.g. 214 | e.g. 171 | −43 |
+| Storage used on /data | … | … | … |
+| Used RAM (3 min after restart) | … | … | … |
+
+(Example numbers only. Yours come from your phone.)
+
+---
+
 ## Is this safe?
 
 It is designed to be as safe as possible, but no tool can promise it works on every phone. Read this before you start.
 
-- **Nothing is deleted from the phone.** Apps are removed only for your user profile (`pm uninstall --user 0`). The app file stays on the phone, so it can be restored with one command or by a factory reset.
+- **Nothing is deleted from the phone's system.** Apps are removed only for your user profile (`pm uninstall --user 0`). The app's installation file stays on the phone, so it can be restored with one command or by a factory reset. The removed apps' own data and cache are deleted; that's what frees storage.
 - **You approve every removal.** The AI stops and shows you a table first.
 - **An undo file is written first.** Before each removal, the AI adds the restore command to `rollback.bat` (Windows) and `rollback.sh` (Mac/Linux).
 - **Important apps are protected.** The AI is told never to touch your dialer, SMS app, keyboard, home screen, Play Store, Google Play services, camera, emergency alerts, security, or system update components.
+- **Numbers are measured, not guessed.** The AI must take every number in the report from a command it ran, or say "not measured".
 - **It goes in small steps.** The AI removes one group at a time, then restarts the phone and asks you to test calls, SMS, camera and other basics.
 
 **Do not use this on a work or school phone** that your organisation manages. The prompt detects this and stops.
@@ -97,25 +122,28 @@ You should see one line ending in `device`. If it says `unauthorized`, unlock th
 A chat AI usually can't download the UAD-ng list. It will tell you so, and mark its ratings as "AI knowledge, unverified". Be more cautious with those, or use Option A.
 
 ### Step 5: Review the list carefully
-The AI shows you a table for each risk level:
+The AI restarts the phone once and measures it first (the "before" numbers). This takes about 5 minutes. Then it shows you:
 
-| Tier | What it means | Suggestion |
+| Group | What it means | Selected? |
 |---|---|---|
-| **Recommended** | Safe for almost everyone | Approve these first |
-| **Advanced** | Features some people use | Read each one |
+| **Group A** | Glance, lock-screen feeds, ad services, pop-ups, app-store nags | ✅ Pre-selected |
+| **Recommended** | Other bloatware that's safe for almost everyone | You choose |
+| **Advanced** | Features some people use | You choose; read each one |
 | **Expert** | Can break things; only disabled, never uninstalled | Skip unless you know you don't need it |
 
-Reply with exactly what to remove, for example:
-- `approve all Recommended`
-- `approve Recommended except 4 and 9`
-- `approve Advanced 2, 5`
+Reply with exactly what to apply, for example:
+- `go` applies Group A only
+- `go, except A3 and A7` applies Group A without those two items
+- `go + all Recommended`
+- `go + Recommended except 4 and 9`
 
-The AI will not remove anything you didn't name.
+The AI will not change anything you didn't approve.
 
 ### Step 6: Test after each group
 After each group, the AI restarts the phone. Then check:
 
 - [ ] Unlock works (PIN, fingerprint, face)
+- [ ] The lock screen shows a normal wallpaper, with no stories or ads
 - [ ] Make and receive a call
 - [ ] Send and receive an SMS
 - [ ] Mobile data and Wi-Fi
@@ -128,6 +156,15 @@ After each group, the AI restarts the phone. Then check:
 - [ ] Settings → System update opens
 
 Tell the AI the result. If something broke, it restores that group and narrows down which app caused it.
+
+### Step 7: Read your report
+When everything works, the AI restarts the phone once more, measures it the same way, and gives you `report.md` with:
+- **Apps:** how many were installed before and after (preinstalled and downloaded counted separately)
+- **Storage freed:** measured on the phone, plus an estimate from the removed apps' sizes
+- **RAM freed:** measured 3 minutes after a restart, plus the RAM the removed apps were using
+- **What happened to Glance and each app store,** and how to turn off anything that could only be blocked
+
+Storage freed is often smaller than people expect. Preinstalled apps live on a read-only part of the phone, so only their updates, data and cache can be freed. The report explains this.
 
 ---
 
@@ -150,6 +187,7 @@ If an app was disabled instead of uninstalled:
 ```bash
 adb shell pm enable --user 0 com.example.package
 ```
+If an app store was muted, or an app's pop-ups were blocked, the exact restore lines (with the original settings) are in the undo files.
 
 **Last resort:** a factory reset brings back every removed app, but it erases your data.
 
@@ -159,11 +197,14 @@ adb shell pm enable --user 0 com.example.package
 
 | File | What it is |
 |---|---|
-| `packages_before.txt` | Every app on the phone before any change |
-| `packages_after.txt` | Every app after debloating |
-| `rollback.bat` / `rollback.sh` | Undo commands for everything that was removed |
-| `removal_log.csv` | What was removed, when, and whether it worked |
-| `baseline_before.txt` / `baseline_after.txt` | RAM, storage and battery readings for comparison |
+| `report.md` | The final before/after report |
+| `packages_before*.txt` / `packages_after*.txt` | App lists before and after (all, preinstalled, downloaded, disabled) |
+| `rollback.bat` / `rollback.sh` | Undo commands for every change |
+| `removal_log.csv` | What was changed, when, and whether it worked |
+| `meminfo_before.txt` / `meminfo_after.txt` | RAM readings, each taken 3 minutes after a restart |
+| `df_before.txt` / `df_after.txt` | Storage readings |
+| `diskstats_before.txt` | Size of each app before removal |
+| `battery_before.txt` | Battery level and temperature |
 
 Keep the folder. Your undo files are in it.
 
@@ -186,7 +227,13 @@ Keep the folder. Your undo files are in it.
 ## FAQ
 
 **Will this make my phone faster?**
-It usually helps privacy, storage and battery more than speed. On a newer phone the difference in speed is often small. The prompt saves before/after RAM, storage and battery readings so you can see for yourself.
+It usually helps privacy, storage and battery more than speed, and it removes lock-screen ads and nagging notifications. On a newer phone the difference in speed is often small. The report shows measured before/after numbers so you can see for yourself.
+
+**Glance came back, or my lock screen still shows stories. Why?**
+On some phones the feed is built into the lock screen and can't be removed safely, so the AI blocks it and gives you the Settings switch to turn it off. A big system update can also reinstall Glance. Run the prompt again after updates.
+
+**Why wasn't Galaxy Store (or my phone's app store) removed?**
+Some stores are needed by the phone. Samsung Pay needs Galaxy Store, and on phones without Google Play the brand's store is the only way to install apps. In those cases the AI turns off the store's notifications and background activity instead, which stops the nagging.
 
 **Does it need root, or does it void my warranty?**
 No root is needed, and it doesn't unlock the bootloader. It uses only standard ADB commands.
