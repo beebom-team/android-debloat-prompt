@@ -10,15 +10,14 @@ The AI reads your phone over a USB cable and checks every app against the commun
 
 ## What it does by default
 
-These are pre-selected on every phone. You still confirm them once with a single reply ("go"):
+The first three are pre-selected on every phone, and you confirm them once with a single reply ("go"). Bloatware removal is shown as a list for you to pick from:
 
 | | What | How |
 |---|---|---|
 | 🔒 | **Removes Glance and lock-screen "stories" feeds** on every brand: Glance on Samsung, Xiaomi, Motorola, Nothing and others; Lock Screen Magazine on OPPO, realme and OnePlus; vivo Magazine; Wallpaper Carousel; Huawei/Honor Magazine; Tecno/Infinix feeds | Uninstalls them. If the feed is built into the lock screen itself (some OPPO/realme/OnePlus phones), it blocks the feed instead and shows you the exact switch to turn it off in Settings |
 | 🚫 | **Stops ad pop-ups** | Removes ad services (for example Xiaomi MSA, App Vault, AppCloud, Digital Turbine), and blocks "display over other apps" for apps that shouldn't have it |
 | 🔕 | **Silences preinstalled app stores** that aren't Google Play (GetApps, Galaxy Store, App Market, vivo App Store and others) | Removes the store where it's safe to. Where the phone needs it (for example Samsung Pay needs Galaxy Store, or a phone without Google Play), it turns off the store's notifications and background activity instead |
-
-Everything else (other bloatware) is shown as a list, and you choose what goes.
+| 🧹 | **Removes bloatware**: preinstalled apps you don't need, such as duplicate OEM apps (browser, music, video, themes), Facebook and other partner apps, carrier apps, games and trackers | Lists every one with a plain-English description and a risk level (Recommended, Advanced, Expert), checked against the [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) community list. You pick what goes, for example `go + all Recommended`. Expert apps are only disabled, never uninstalled |
 
 At the end, the AI gives you a **before/after report** with measured numbers:
 
