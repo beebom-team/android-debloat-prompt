@@ -43,7 +43,7 @@ At the end, the AI gives you a **before/after report** with measured numbers. Re
 | Samsung Galaxy M47 | 17 / 71 | 277 MB | 1.8 GB |
 | OPPO K14 5G | 22 / 29 | 276 MB | 2.4 GB |
 
-Your numbers will differ. They come from your phone.
+Your numbers will differ. They come from your phone. "RAM freed" is the memory the removed and disabled apps were using; "Storage freed" is the measured change in used space on /data.
 
 ### Before and after: REDMI Note 17
 
