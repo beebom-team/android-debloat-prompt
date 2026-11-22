@@ -6,7 +6,7 @@
 
 AI USB केबल से आपका फ़ोन पढ़ता है और हर ऐप को कम्युनिटी की बनाई [Universal Android Debloater Next Generation (UAD-ng)](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) लिस्ट से मिलाता है। वह आपको बताता है कि क्या हटाना सुरक्षित है, और कुछ भी बदलने से पहले **आपकी मंज़ूरी का इंतज़ार करता है**। हर ऐप हटाने से पहले वह एक undo फ़ाइल लिखता है, ताकि सब कुछ वापस लाया जा सके।
 
-**✅ Xiaomi (Redmi), realme, vivo, Motorola, Samsung और OPPO फ़ोन पर, Android 16 और 17 के साथ टेस्ट किया गया।** नतीजे नीचे देखें।
+**✅ Xiaomi (Redmi), realme, vivo, Motorola और Samsung फ़ोन पर, Android 16 और 17 के साथ टेस्ट किया गया।** नतीजे नीचे देखें।
 
 **➡️ प्रॉम्प्ट [PROMPT.md](PROMPT.md) में है।** प्रॉम्प्ट अंग्रेज़ी में है, लेकिन उसे पेस्ट करने के बाद आप AI से हिन्दी में बात कर सकते हैं।
 
@@ -41,9 +41,8 @@ AI USB केबल से आपका फ़ोन पढ़ता है औ�
 | vivo T5 | 75 / 1 | 370 MB | 4.6 GB |
 | moto edge 70 fusion | 5 / 48 | 420 MB | 2.0 GB |
 | Samsung Galaxy M47 | 17 / 71 | 277 MB | 1.8 GB |
-| OPPO K14 5G | 22 / 29 | 276 MB | 2.4 GB |
 
-आपके आँकड़े अलग होंगे। वे आपके फ़ोन से आते हैं। "RAM freed" वह मेमोरी है जो हटाए और बंद किए गए ऐप्स इस्तेमाल कर रहे थे; "Storage freed" /data पर इस्तेमाल हुई जगह में मापा गया बदलाव है।
+आपके आँकड़े अलग होंगे। वे आपके फ़ोन से आते हैं।
 
 ### पहले और बाद: REDMI Note 17
 
@@ -285,7 +284,7 @@ adb shell pm enable --user 0 com.example.package
 | Xiaomi HyperOS पर `Failure [-1000]` | HyperOS, Xiaomi के कुछ अपने ऐप्स को बचाता है (जैसे ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder)। ऐप जैसा था वैसा रहता है। कुछ खराब नहीं हुआ |
 | OPPO / realme / OnePlus पर `Failure [DELETE_FAILED_INTERNAL_ERROR]` | फ़ोन अपने कुछ ऐप्स को बचाता है (जैसे App Market, Game Center, Instant Games)। कुछ खराब नहीं हुआ। ऐप स्टोर हो तो AI उसे अपने-आप चुप करा देता है। vivo भी `DELETE_FAILED_USER_RESTRICTED` से मना कर सकता है; उसे भी ऐसे ही संभाला जाता है |
 | vivo / iQOO (OriginOS) पर कई ऐप्स मना हो जाते हैं | एक टेस्ट किए गए OriginOS 6 फ़ोन पर vivo के 15 अपने ऐप्स मना हुए (जैसे V-Appstore, Jovi, vivoCloud)। कुछ खराब नहीं हुआ। AI उन्हें बंद करने का विकल्प देता है |
-| `Failure [only root can delete system app for a particular user]` (Android 17) | Android 17 वाले टेस्ट किए गए Motorola edge 70 fusion, Samsung Galaxy M47 और OPPO K14 5G पर हर पहले से आया ऐप ऐसे ही मना हुआ। कुछ खराब नहीं हुआ। AI उन्हें बंद करने का विकल्प देता है। बंद ऐप्स न चल सकते हैं, न विज्ञापन दिखा सकते हैं, न नोटिफ़िकेशन भेज सकते हैं; RAM वापस मिलती है, स्टोरेज नहीं |
+| `Failure [only root can delete system app for a particular user]` (Android 17) | Android 17 वाले टेस्ट किए गए Motorola edge 70 fusion और Samsung Galaxy M47 पर हर पहले से आया ऐप ऐसे ही मना हुआ। कुछ खराब नहीं हुआ। AI उन्हें बंद करने का विकल्प देता है। बंद ऐप्स न चल सकते हैं, न विज्ञापन दिखा सकते हैं, न नोटिफ़िकेशन भेज सकते हैं; RAM वापस मिलती है, स्टोरेज नहीं |
 | `Failure: package is non-disable` | फ़ोन इस ऐप को हटाने या बंद करने से बचाता है। कुछ खराब नहीं हुआ। अगर यह नोटिफ़िकेशन भेजे, तो उस पर देर तक दबाकर उन्हें बंद करें |
 | `Shell cannot change component state for null to 3` | ऐप शुरू करने से पहले ही बंद था। कुछ करने की ज़रूरत नहीं |
 | फ़ोन पर दिखने वाले नाम से AI ऐप नहीं ढूँढ पा रहा | कुछ पहले से आए ऐप्स के पैकेज नाम अजीब होते हैं। AI बाकी ऐप्स हटाकर अंदाज़ा लगाता है और आपसे पक्का करवाता है। खुद देखने के लिए: **Settings → Apps → (ऐप) → App details** से उसका Play Store पेज खुलता है, जिसके पते में पैकेज नाम होता है |
@@ -295,7 +294,7 @@ adb shell pm enable --user 0 com.example.package
 | PowerShell में `rollback.bat` is not recognized | `.\rollback.bat` लिखें (PowerShell मौजूदा फ़ोल्डर की फ़ाइल तभी चलाता है जब आगे `.\` हो) |
 | फ़ोन के अपने ऐप्स (Security, Themes, File Manager) में अब भी विज्ञापन आते हैं | इन ऐप्स को रहना ही है, इसलिए इनके विज्ञापन सिर्फ़ Settings से बंद होते हैं। आपकी रिपोर्ट में सही स्विच लिखे हैं। न मिले तो Settings में "recommendations" सर्च करें |
 | हर ऐप इंस्टॉल करने के बाद विज्ञापन या "recommended apps" वाला पेज आता है (OPPO, realme, OnePlus, vivo, iQOO, Xiaomi) | OPPO / realme / OnePlus पर प्रॉम्प्ट Phone Manager हटाता है, जो यह पेज दिखाता है। साथ ही **Settings → Additional settings → Get recommendations** बंद करें (या Settings में "recommendations" सर्च करें)। vivo / iQOO पर यह i Manager से आता है, जिसे रहना ही है: उसकी settings में इंस्टॉल के समय की security check और recommendations बंद करें। Xiaomi पर: **Security → Settings → Receive recommendations** बंद करें |
-| होम स्क्रीन पर "Games", "Hot Apps" या "Hot Games" फ़ोल्डर ऐसे ऐप्स से भरा है जो इंस्टॉल ही नहीं हैं (जैसे Motorola, vivo या realme पर) | ये शॉर्टकट हैं जो टैप करने पर ऐप डाउनलोड करते हैं। प्रॉम्प्ट उन्हें डालने वाले ऐप्स हटा देता है, ताकि नए न आएँ। फ़ोल्डर सिर्फ़ आइकन है: उस पर देर तक दबाएँ और **Remove** चुनें। vivo / iQOO पर V-Appstore की settings में "Hot apps and games on home screen" भी बंद करें |
+| होम स्क्रीन पर "Games", "Hot Apps" या "Hot Games" फ़ोल्डर ऐसे ऐप्स से भरा है जो इंस्टॉल ही नहीं हैं (जैसे Motorola, vivo या realme पर) | ये शॉर्टकट हैं जो टैप करने पर ऐप डाउनलोड करते हैं। प्रॉम्प्ट उन्हें डालने वाले ऐप्स हटा देता है, ताकि नए न आएँ। Motorola पर "Games" फ़ोल्डर ("Game picks", "Play without downloading") Moto Smart Feed से आता है, जिसे अब प्रॉम्प्ट बंद कर देता है। उसके recommendations वाले पॉप-अप पर "Agree and continue" न दबाएँ। फ़ोल्डर सिर्फ़ आइकन है: उस पर देर तक दबाएँ और **Remove** चुनें। vivo / iQOO पर V-Appstore की settings में "Hot apps and games on home screen" भी बंद करें |
 | सिस्टम अपडेट के बाद कोई ऐप वापस आ गया | यह सामान्य है। बड़े अपडेट के बाद प्रक्रिया फिर से चलाएँ |
 | रीस्टार्ट के बाद फ़ोन लोगो पर अटक गया | अगर `adb devices` अब भी फ़ोन दिखाता है, तो undo फ़ाइल चलाएँ। वरना recovery mode से फ़ैक्टरी रीसेट करें |
 
@@ -325,7 +324,7 @@ Samsung पर Glance का अपना कोई ऐप नहीं है�
 ज़्यादातर हाँ। सिस्टम ऐप्स सिर्फ़ आपकी यूज़र प्रोफ़ाइल से हटते हैं, और undo फ़ाइलें उन्हें वापस लाती हैं। लिस्ट में † वाले ऐप्स (पहले से आए "डाउनलोड किए गए" ऐप्स, जैसे पार्टनर गेम्स) पूरी तरह डिलीट होते हैं; उन्हें Play Store से दोबारा इंस्टॉल करें।
 
 **यह किन फ़ोन पर काम करता है?**
-किसी भी ब्रांड के Android 5 और नए फ़ोन पर। Android 17 पर फ़ोन बिना रूट के पहले से आए ऐप्स अनइंस्टॉल करने से मना कर सकता है (Motorola edge 70 fusion, Samsung Galaxy M47 और OPPO K14 5G पर देखा गया), तब ऐप्स बंद किए जाते हैं और स्टोरेज कम या बिल्कुल खाली नहीं होती।
+किसी भी ब्रांड के Android 5 और नए फ़ोन पर। Android 17 पर फ़ोन बिना रूट के पहले से आए ऐप्स अनइंस्टॉल करने से मना कर सकता है (Motorola edge 70 fusion और Samsung Galaxy M47 पर देखा गया), तब ऐप्स बंद किए जाते हैं और स्टोरेज कम या बिल्कुल खाली नहीं होती।
 
 ---
 

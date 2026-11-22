@@ -6,7 +6,7 @@ A copy-paste prompt that turns any AI assistant (Claude, ChatGPT, Gemini, and ot
 
 The AI reads your phone over a USB cable and checks every app against the community-maintained [Universal Android Debloater Next Generation](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) list. It shows you what is safe to remove and **waits for your approval** before changing anything. It writes an undo file before each removal, so everything can be put back.
 
-**✅ Tested on Xiaomi (Redmi), realme, vivo, Motorola, Samsung and OPPO phones, on Android 16 and 17.** [See the results](#what-it-does-by-default).
+**✅ Tested on Xiaomi (Redmi), realme, vivo, Motorola and Samsung phones, on Android 16 and 17.** [See the results](#what-it-does-by-default).
 
 **➡️ The prompt is in [PROMPT.md](PROMPT.md).**
 
@@ -41,9 +41,8 @@ At the end, the AI gives you a **before/after report** with measured numbers. Re
 | vivo T5 | 75 / 1 | 370 MB | 4.6 GB |
 | moto edge 70 fusion | 5 / 48 | 420 MB | 2.0 GB |
 | Samsung Galaxy M47 | 17 / 71 | 277 MB | 1.8 GB |
-| OPPO K14 5G | 22 / 29 | 276 MB | 2.4 GB |
 
-Your numbers will differ. They come from your phone. "RAM freed" is the memory the removed and disabled apps were using; "Storage freed" is the measured change in used space on /data.
+Your numbers will differ. They come from your phone.
 
 ### Before and after: REDMI Note 17
 
@@ -285,9 +284,7 @@ Keep the folder. Your undo files are in it.
 | `Failure [-1000]` on Xiaomi HyperOS | HyperOS protects some of Xiaomi's own apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder). The app stays as it was. Nothing broke |
 | `Failure [DELETE_FAILED_INTERNAL_ERROR]` on OPPO / realme / OnePlus | The phone protects some of its own apps (for example App Market, Game Center, Instant Games). The app stays as it was. Nothing broke. For an app store, the AI automatically mutes it instead. vivo can also refuse with `DELETE_FAILED_USER_RESTRICTED`; it's handled the same way |
 | Many vivo / iQOO apps are refused (OriginOS) | On a tested OriginOS 6 phone, 15 of vivo's own apps were refused (for example V-Appstore, Jovi, vivoCloud, App Clone, Floating ball, Smart Vision). Nothing broke. The AI offers to disable them instead; the vivo Lock Screen Poster could be disabled this way |
-| `Failure [only root can delete system app for a particular user]` (Android 17) | On a tested Motorola edge 70 fusion, Samsung Galaxy M47 and OPPO K14 5G, all with Android 17, every preinstalled app was refused this way. Nothing broke. The AI offers to disable them instead. Disabled apps can't run, show ads or send notifications, so you get the RAM back but not the storage |
-| Disabling prints `new state: default` | The phone protects that app and refused to disable it. Nothing changed. Seen on an OPPO K14 5G (ColorOS 17) for App Market and two instant-game services. Turn off its notifications in Settings instead |
-| `SecurityException: uid 2000 does not have android.permission.MANAGE_APP_OPS_MODES` | ColorOS 17 blocks ADB from muting apps or blocking pop-ups. The AI gives you the Settings steps to turn off that app's notifications or pop-ups yourself |
+| `Failure [only root can delete system app for a particular user]` (Android 17) | On a tested Motorola edge 70 fusion and a Samsung Galaxy M47, both with Android 17, every preinstalled app was refused this way. Nothing broke. The AI offers to disable them instead. Disabled apps can't run, show ads or send notifications, so you get the RAM back but not the storage |
 | `Failure: package is non-disable` | The phone protects this app from being removed or disabled (tested on Motorola). Nothing broke. If it sends notifications, long-press one and turn them off |
 | `Shell cannot change component state for null to 3` | The app was already disabled before you started. Nothing to do |
 | The AI can't find an app by the name shown on the phone | Some preinstalled apps use random-looking package names (on a tested vivo phone, "Axe Ace" and "EVO" were `com.kncbetru.weryu` and `com.lgzddt.sk.yfv.opcyzl.bitjiz`). The AI narrows it down by elimination and asks you to confirm. To check yourself: **Settings → Apps → (the app) → App details** opens its Play Store page, and the address contains the package name |
@@ -297,7 +294,7 @@ Keep the folder. Your undo files are in it.
 | `rollback.bat` is not recognized in PowerShell | Type `.\rollback.bat` (PowerShell only runs files from the current folder with `.\` in front) |
 | Ads still appear inside the phone's own apps (Security, Themes, File Manager) | These apps must stay, so their ads can only be turned off in Settings. Your report lists the exact switches. Search Settings for "recommendations" if you can't find one |
 | An ad or "recommended apps" page appears every time you install an app (OPPO, realme, OnePlus, vivo, iQOO, Xiaomi) | On OPPO / realme / OnePlus the prompt removes Phone Manager, which shows that page. Also turn off **Settings → Additional settings → Get recommendations** (or search Settings for "recommendations"). On vivo / iQOO it comes from i Manager, which must stay: in its settings, turn off the security check on installation and recommendations. On Xiaomi: **Security → Settings → Receive recommendations** off |
-| A "Games", "Hot Apps" or "Hot Games" folder on the home screen is full of apps that aren't installed (for example on Motorola, vivo or realme) | Those are shortcuts that download an app when tapped. The prompt removes the apps that put them there, so no new ones appear. The folder itself is only icons: long-press it and choose **Remove**. On vivo / iQOO, also turn off "Hot apps and games on home screen" in V-Appstore's settings |
+| A "Games", "Hot Apps" or "Hot Games" folder on the home screen is full of apps that aren't installed (for example on Motorola, vivo or realme) | Those are shortcuts that download an app when tapped. The prompt removes the apps that put them there, so no new ones appear. On Motorola, the "Games" folder ("Game picks", "Play without downloading") comes from Moto Smart Feed, which the prompt now switches off. Don't tap "Agree and continue" on its recommendations pop-up. The folder itself is only icons: long-press it and choose **Remove**. On vivo / iQOO, also turn off "Hot apps and games on home screen" in V-Appstore's settings |
 | An app came back after a system update | Normal. Run the process again after big updates |
 | The phone is stuck on the logo after a restart | If `adb devices` still shows it, run the undo file. Otherwise, factory reset from recovery mode |
 
@@ -327,7 +324,7 @@ No root is needed, and it doesn't unlock the bootloader. It uses only standard A
 Mostly. System apps are removed for your user profile only, and the undo files restore them. Apps marked † in the list (preinstalled "downloaded" apps such as partner games) are deleted completely; you reinstall those from the Play Store if you want them back.
 
 **Which phones does it work on?**
-Android 5 and newer from any brand. On Android 17, the phone may refuse to uninstall any preinstalled app without root (seen on a Motorola edge 70 fusion, a Samsung Galaxy M47 and an OPPO K14 5G), so apps are disabled instead and little or no storage is freed. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
+Android 5 and newer from any brand. On Android 17, the phone may refuse to uninstall any preinstalled app without root (seen on a Motorola edge 70 fusion and a Samsung Galaxy M47), so apps are disabled instead and little or no storage is freed. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
 
 ---
 
