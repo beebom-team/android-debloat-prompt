@@ -19,15 +19,20 @@ The first three are pre-selected on every phone, and you confirm them once with 
 | 🔕 | **Silences preinstalled app stores** that aren't Google Play (GetApps, Galaxy Store, App Market, vivo App Store and others) | Removes the store where it's safe to. Where the phone needs it (for example Samsung Pay needs Galaxy Store, or a phone without Google Play), it turns off the store's notifications and background activity instead |
 | 🧹 | **Removes bloatware**: preinstalled apps you don't need, such as duplicate OEM apps (browser, music, video, themes), Facebook and other partner apps, carrier apps, games and trackers | Lists every one with a plain-English description and a risk level (Recommended, Advanced, Expert), checked against the [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) community list. You pick what goes, for example `go + all Recommended`. Expert apps are only disabled, never uninstalled |
 
-At the end, the AI gives you a **before/after report** with measured numbers:
+At the end, the AI gives you a **before/after report** with measured numbers. These are the real results from the four phones we tested (Group A + all Recommended on each):
 
-| Measure | Before | After | Change |
+| Phone | Apps installed | Storage used on /data | RAM used by the removed apps |
 |---|---|---|---|
-| Apps installed | e.g. 214 | e.g. 171 | −43 |
-| Storage used on /data | … | … | … |
-| RAM used by the removed apps | … | 0 | … |
+| REDMI Note 17 (HyperOS 3, Android 16) | 434 → 358 (−76) | 18.94 → 17.36 GiB (−1.57 GiB) | 468 MiB → 0 |
+| realme P4R (realme UI 7, Android 16) | 446 → 386 (−60) | 15.96 → 15.66 GiB (−0.30 GiB) | 103 MiB → 0 |
+| vivo T5 (OriginOS 6, Android 16) | 398 → 323 (−75)¹ | 17.58 → 12.94 GiB (−4.64 GiB)² | 370 MiB → 0 |
+| moto edge 70 fusion (Android 17) | 450 → 450 (0)³ | 7.15 → 7.17 GiB (+0.02 GiB) | 246 MiB → 0 |
 
-(Example numbers only. Yours come from your phone.)
+¹ Includes 7 apps the owner named in addition to Recommended.
+² Larger because 29 preinstalled "downloaded" apps († in the list) were deleted completely, APK and all.
+³ This Android 17 build refused every uninstall without root, so 47 apps were disabled instead. They can't run, but their files stay, so no storage was freed.
+
+Your numbers will differ. They come from your phone.
 
 ---
 
@@ -264,6 +269,8 @@ Android 5 and newer from any brand. On Android 17, the phone may refuse to unins
 ---
 
 ## Credits
+
+Created by Ramjie Wassane from [Beebom](https://beebom.com).
 
 App ratings come from the [Universal Android Debloater Next Generation](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) community list. If you prefer a desktop app with buttons instead of an AI, use UAD-ng directly.
 
