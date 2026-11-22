@@ -364,12 +364,20 @@ PHASE 6: ONE RESTART, THEN VERIFY
 5. Ask me to check each of these on the phone and tell you the result:
      unlock (PIN, fingerprint, face) | lock screen shows a normal wallpaper and no stories feed | home screen | make AND receive a call | send AND receive an SMS | mobile data | Wi-Fi | Bluetooth | camera photo and video | a notification from a messaging app | Play Store opens and can update an app | alarms | banking or payment apps open | system update screen opens
    If a banking or UPI app refuses to open with a message about Developer options, USB debugging or a "rooted / unsafe device", that is the app's own security check reacting to Developer options being on. It is not caused by debloating: do not undo anything for it. Tell me it will open once I turn off Developer options at the very end (see Phase 7), and count the check as passed.
-6. OPPO / realme / OnePlus only: ALWAYS do this when App Market (com.heytap.market or com.oppo.market) is still installed (also when it was muted or disabled). App Market shows a "Security test" page with an ad and sponsored apps after EVERY app I install from the Play Store, and a home-screen "Hot apps & hot games" folder. Both are switches inside App Market's own settings, which no allowed command can change, so open that screen for me:
-     adb shell am start -n com.heytap.market/com.oplus.market.setting.ExpSettingActivity
-   (if that fails, tell me to find App Market in Settings > Apps, or search Settings for "App Market"). Then ask me to turn OFF:
-     - "Security test for apps not from App Market" (lower on the page; it says "recommend safe alternatives"): this removes the ad page after every install.
-     - "Hot apps & hot games" ("Generate Home screen folders for recommended popular apps and games").
-   Wait until I confirm both are off, and list them in the report. Tested on an OPPO CPH2869 / ColorOS 17 / Android 17 (India, App Market 26.8.60_IN): the after-install ad page came from com.heytap.market (screen com.oplus.exp.installed.rec.core.InstalledRecommendActivity), not from Phone Manager, and the "Security test for apps not from App Market" switch was on by default.
+6. OPPO / realme / OnePlus only: ALWAYS do this when App Market (com.heytap.market or com.oppo.market) is still installed (also when it was muted or disabled). App Market shows a "Security test" page with an ad and sponsored apps after EVERY app I install from the Play Store, and a home-screen "Hot apps & hot games" folder. Both are switches inside App Market's own settings. Group A already approves turning them off, so do it yourself, without asking, while the phone is unlocked after the restart:
+     a. Open the screen: adb shell am start -n com.heytap.market/com.oplus.market.setting.ExpSettingActivity
+        If App Market is disabled, it cannot open: skip to "fallback" below.
+     b. Read the screen: adb shell uiautomator dump /sdcard/ui.xml, then adb shell cat /sdcard/ui.xml, then adb shell rm /sdcard/ui.xml
+     c. For each of these two titles (the XML writes "&" as "&amp;"):
+          "Security test for apps not from App Market" (subtitle mentions "recommend safe alternatives"): this removes the ad page after every install.
+          "Hot apps & hot games" (subtitle "Generate Home screen folders for recommended popular apps and games").
+        Find the node whose text is exactly that title, and the switch in the same row (a node with checkable="true" whose bounds overlap the title's row vertically). If the title is not on screen, scroll with adb shell input swipe <half the screen width> <70% of the height> <half the width> <25% of the height> 400 and read the screen again (at most 4 times).
+        - checked="true": tap the centre of the switch's bounds once: adb shell input tap <x> <y>. Then read the screen again and confirm checked="false".
+        - checked="false": it is already off. Do nothing.
+        Log each one in removal_log.csv (group A, action "switch off", result).
+     d. Tap nothing else on this screen, ever. Then go home: adb shell input keyevent KEYCODE_HOME
+     Fallback, with no tapping at all: if a title is not found (for example the phone is not in English, or this App Market version differs), the screen is locked, the settings screen did not open, or anything else is on screen (a pop-up, a sign-in or terms page), ask me to turn the two switches off by hand (App Market > Settings), and wait until I confirm.
+     In the rollback files, add a comment line (REM in rollback.bat, # in rollback.sh) saying these two App Market switches were turned off and can be turned back on in App Market > Settings. List both switches and their result in the report. Tested on an OPPO CPH2869 / ColorOS 17 / Android 17 (India, App Market 26.8.60_IN): the after-install ad page came from com.heytap.market (screen com.oplus.exp.installed.rec.core.InstalledRecommendActivity), not from Phone Manager, and the "Security test for apps not from App Market" switch was on by default. Reading the screen with uiautomator and tapping that row with "input tap" turned it off, and the next screen read showed it off.
 
 If something broke (this is the only case where another restart is allowed):
 1. Undo the newest group or tier with its rollback commands (Expert first, then Advanced, then Recommended, then Group A).
@@ -483,6 +491,8 @@ Read-only:
   adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
   adb shell sleep <seconds>
   adb shell am start -n com.heytap.market/com.oplus.market.setting.ExpSettingActivity   (Phase 6 step 6 only: opens App Market's settings screen; changes nothing by itself)
+  adb shell uiautomator dump /sdcard/ui.xml | adb shell cat /sdcard/ui.xml | adb shell rm /sdcard/ui.xml   (Phase 6 step 6 only: reads the screen)
+  adb shell input swipe ... | adb shell input tap <x> <y> | adb shell input keyevent KEYCODE_HOME   (Phase 6 step 6 only: scroll, tap one of the two named App Market switches, go home)
   adb shell uptime | adb shell cat /proc/uptime
   adb shell pm list packages <package>   (check whether one package is still installed)
   adb shell pm list packages -d <package>   (check whether one package is still disabled)
