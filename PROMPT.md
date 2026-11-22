@@ -25,6 +25,7 @@ HOW WE WORK
   - pm prints some failures on stderr, so capture both streams, for example: cmd /c "adb shell pm uninstall --user 0 <package> 2>&1". Otherwise a failure can look like an empty result.
   - An array passed to a script with "powershell -File" arrives as one item. Pass a comma-separated string and split it inside the script.
   - In a double-quoted string, "$p:" is read as a drive variable and fails. Write $p + ':' instead.
+  - Write rollback.bat, rollback.sh and removal_log.csv as UTF-8 WITHOUT a byte-order mark, for example [IO.File]::WriteAllText(path, text, (New-Object System.Text.UTF8Encoding($false))). Out-File and Set-Content in 5.1 can add a BOM, and a BOM before "@echo off" breaks the batch file. Write rollback.sh with LF line endings.
   - Numbers are formatted with the PC's region settings: an Indian-English PC prints 105798 as 1,05,798. Format report numbers with the invariant culture, for example $n.ToString('N0', [Globalization.CultureInfo]::InvariantCulture).
 - Privacy: "pm list users" shows the phone owner's name, and "adb devices" shows the phone's serial number. Do not repeat either in the chat, in report.md or in any file you share.
 - Use only the commands in the ALLOWED COMMANDS section at the end. Never use root, never flash anything, never touch the bootloader, never run pm clear, rm, settings put, adb install, or any pm uninstall without --user 0.
@@ -76,6 +77,7 @@ Run each of these. An empty result is normal and only means "not this skin":
 
 Then:
 - If ro.build.version.sdk is below 21 (older than Android 5), stop: this process is not supported.
+- If ro.build.version.sdk is 37 or higher (Android 17 or newer), tell me in the summary: "On Android 17 the phone may refuse to uninstall any preinstalled app without root. If that happens, I will offer to disable them instead. Disabling stops them running, but frees RAM, not storage." Tested on a Motorola edge 70 fusion / Android 17 (SDK 37): all 67 preinstalled-app uninstalls were refused with "Failure [only root can delete system app for a particular user]", while "pm disable-user --user 0" worked.
 - If dumpsys device_policy shows a Device Owner or Profile Owner (a work- or school-managed phone), stop and tell me to ask my IT department instead.
 - Only ever touch user 0 (the main user). Leave other users and profiles alone, such as Samsung Secure Folder (often user 150), Dual Messenger (95), or Xiaomi Second Space/Dual Apps (999).
 - Summarise: manufacturer, brand, model, Android version, skin and its version, carrier.
@@ -93,6 +95,8 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
    (If you cannot write files, tell me to save each output myself, and write the counts in the chat.)
    From packages_before_all.txt (it shows each package's file path), mark every package that is in packages_before_downloaded.txt as "downloaded-type". This includes preinstalled apps whose path starts with /data/app, /product/data-app, /cust/app, /my_preload or /my_stock (for example partner games, Xiaomi's Notes, Calendar or Weather on some phones, and OPPO / realme apps in /my_stock/del-app or /my_preload/del-app). On a phone with one user, "pm uninstall --user 0" deletes a downloaded-type app completely. "install-existing" cannot bring it back, only the Play Store or a factory reset can. Tested on HyperOS 3 / Android 16: 18 downloaded-type apps were removed, and packages_all went from 434 to 416. Tested on realme UI 7 / Android 16: apps in /my_stock/del-app and /my_preload/del-app (Backup & Restore, realme Community, preinstalled games) were deleted completely too, and packages_all went from 446 to 426 over two rounds.
    On vivo / iQOO (OriginOS), apps in /system/custom/app are NOT in packages_before_downloaded.txt, but "pm uninstall --user 0" still deletes them completely. Mark them downloaded-type (†) too. Tested on OriginOS 6 / Android 16: com.vivo.feedback (/system/custom/app/Feedback) disappeared from "pm list packages -f -u", and packages_all went from 398 to 369 over two rounds.
+   A path in /data/app alone does not make an app downloaded-type: an updated system app also lives in /data/app. Only packages in packages_before_downloaded.txt (and the vivo case above) are downloaded-type. Tested on Motorola / Android 17: com.glance.lockscreenM, Gemini, Maps and Chrome were in /data/app but were system apps.
+   Mark every package that is in packages_before_disabled.txt as "already off". You need this in Phase 4 and Phase 5. Tested on Motorola / Android 17: 61 apps were already disabled before the session, including many Group A and Recommended candidates (Taboola, Aura, ironSource, carrier apps and two partner placeholders).
 
 2. Find the apps that currently fill an essential role. These are PROTECTED and must never be removed or restricted:
      Home screen:   adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
@@ -142,6 +146,8 @@ A1. Glance and lock-screen feeds. Match a package if ANY of these is true:
    - Its UAD-ng description mentions Glance, lock screen stories, lock screen magazine, wallpaper carousel or trending stories.
    - It is one of these known packages:
        com.glance.internet                     Glance (Samsung, Motorola, Nothing, others)
+       com.glance.lockscreenM                  Glance for Motorola (not in UAD-ng; tested on Motorola / Android 17)
+       com.inmobi.weather                      InMobi weather/content service used by Glance (not in UAD-ng; Motorola)
        com.miui.android.fashiongallery         Xiaomi Wallpaper Carousel / Glance for Mi
        com.mfashiongallery.emag                Xiaomi Wallpapers feed
        com.heytap.pictorial                    OPPO / realme / OnePlus Lock Screen Magazine
@@ -159,7 +165,7 @@ A1. Glance and lock-screen feeds. Match a package if ANY of these is true:
    EXCEPTION: if a match is rated "Unsafe" by UAD-ng, or is the lock screen itself, do NOT uninstall it. Known case: com.coloros.pictorial on OPPO, realme and OnePlus (removing it breaks lock-screen settings). For these, use the "Restrict" action (see A3), and in the final report give me the exact steps to switch the feature off in Settings (see PHASE 7).
 
 A2. Ad services, ad pop-ups and promo installers. Match packages whose UAD-ng description says they show ads, adware, promotional notifications, lock-screen ads, or install sponsored apps, and that are rated Recommended or Advanced. Known examples:
-   com.miui.msa.global, com.miui.systemAdSolution, com.miui.hybrid, com.mi.globalminusscreen, com.mi.android.globalminusscreen (Xiaomi ads and App Vault); com.heytap.browser (OPPO browser with ads); net.oneplus.push; com.aura.oobe.* and com.ironsource.appcloud.* (AppCloud / Aura); com.dti.* and com.digitalturbine.* (Digital Turbine); com.tblenovo.lenovotips; com.transsion.chromecustomization; com.android.partnerbrowsercustomizations.* ; com.facebook.appmanager, com.facebook.services, com.facebook.system.
+   com.miui.msa.global, com.miui.systemAdSolution, com.miui.hybrid, com.mi.globalminusscreen, com.mi.android.globalminusscreen (Xiaomi ads and App Vault); com.heytap.browser (OPPO browser with ads); net.oneplus.push; com.aura.oobe.* and com.ironsource.appcloud.* (AppCloud / Aura); com.dti.* and com.digitalturbine.* (Digital Turbine); com.tblenovo.lenovotips; com.transsion.chromecustomization; com.android.partnerbrowsercustomizations.* ; com.facebook.appmanager, com.facebook.services, com.facebook.system; com.orange.aura.oobe (Aura under another name); on Motorola: com.motorola.ccc.notification (opt-in tips, surveys and promo notifications; system update notifications come from com.motorola.ccc.ota, which stays), com.motorola.brapps (App Box), com.motorola.paks and com.motorola.paks.notification (app bundles), android.autoinstalls.config.motorola.layout (auto-installs apps at setup).
    Action for A2: uninstall for user 0.
 
 A3. "Display over other apps" pop-ups. Run:
@@ -174,7 +180,7 @@ A3. "Display over other apps" pop-ups. Run:
 
 A4. Preinstalled app stores that are not Google Play. Never touch com.android.vending (Google Play Store).
    Find installed stores by package name or UAD-ng description, for example:
-     com.xiaomi.mipicks / com.xiaomi.market (GetApps), com.mi.global.shop (Mi Store), com.sec.android.app.samsungapps (Galaxy Store), com.heytap.market / com.oppo.market (OPPO / realme / OnePlus App Market), com.nearme.gamecenter (OPPO / realme Game Center, a games store), com.bbk.appstore (vivo App Store), com.huawei.appmarket (AppGallery), com.hihonor.appmarket (Honor App Market), com.transsnet.store (Palm Store), net.bat.store (AHA Games), com.lenovo.leos.appstore, and any other preinstalled store, including Indus Appstore, that you can identify. Mark identifications without UAD-ng data "AI knowledge, unverified".
+     com.xiaomi.mipicks / com.xiaomi.market (GetApps), com.mi.global.shop (Mi Store), com.sec.android.app.samsungapps (Galaxy Store), com.heytap.market / com.oppo.market (OPPO / realme / OnePlus App Market), com.nearme.gamecenter (OPPO / realme Game Center, a games store), com.bbk.appstore (vivo App Store), com.huawei.appmarket (AppGallery), com.hihonor.appmarket (Honor App Market), com.transsnet.store (Palm Store), net.bat.store (AHA Games), com.lenovo.leos.appstore, and any other preinstalled store, including Indus Appstore (com.indus.appstore, not in UAD-ng; preinstalled on Motorola phones in India), that you can identify. Mark identifications without UAD-ng data "AI knowledge, unverified".
    Decide the action for each store:
    - If com.android.vending is NOT installed (for example a Huawei phone without Google), NEVER uninstall any store, because it may be the only way to install apps. Use "Mute".
    - If the store is rated Recommended by UAD-ng and Play Store is installed: uninstall for user 0.
@@ -187,7 +193,7 @@ A4. Preinstalled app stores that are not Google Play. Never touch com.android.ve
      If an op is not supported on this phone, say so and skip that op.
      If "appops get" prints "No operations." the op is at its default mode: record the mode as "default" (the rollback line is then "cmd appops set <package> <op> default").
      On Android 12 or older, POST_NOTIFICATION does not exist: tell me to turn off this app's notifications in Settings > Apps > <store> > Notifications, and list it in the final report.
-     On Android 13 and newer, notifications are a runtime permission, and the system may undo POST_NOTIFICATION right away (tested on HyperOS 3 / Android 16: after "set ... ignore", "get" showed "allow" again). The Phase 5 check catches this. Log it as failed, do not try another method, and give me the manual Settings steps in the final report. RUN_ANY_IN_BACKGROUND and RUN_IN_BACKGROUND did work.
+     On Android 13 and newer, notifications are a runtime permission, and the system may undo POST_NOTIFICATION right away (tested on HyperOS 3 / Android 16: after "set ... ignore", "get" showed "allow" again). The Phase 5 check catches this. Log it as failed, do not try another method, and give me the manual Settings steps in the final report. RUN_ANY_IN_BACKGROUND and RUN_IN_BACKGROUND did work. Same result on Motorola / Android 17 with com.indus.appstore: POST_NOTIFICATION read back "allow", and both background ops read back "ignore", also after the restart.
 
 ---------------------------------------------------------------------
 GROUP B: OTHER BLOATWARE
@@ -248,6 +254,9 @@ Show:
    Mark every downloaded-type package (Phase 2) with a "†". Explain "†" once, above the lists: "The undo file cannot restore it. Reinstall it from the Play Store." In review.md, write this in its "What I lose" column.
    On Xiaomi HyperOS, mark Xiaomi's own user-facing apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder) as "HyperOS may refuse this (Failure [-1000])". Tested on HyperOS 3: all seven were refused.
    On OPPO / realme / OnePlus, mark com.heytap.market, com.nearme.gamecenter, com.nearme.instant.platform and com.oplus.olc as "may refuse this (Failure [DELETE_FAILED_INTERNAL_ERROR])". Tested on realme UI 7 / Android 16: all four were refused. On vivo / iQOO (OriginOS), mark com.vivo.magazine the same way: it was refused. Also mark these vivo apps as "OriginOS may refuse this (Failure [DELETE_FAILED_USER_RESTRICTED])". Tested on OriginOS 6 / Android 16, all were refused: com.vivo.appstore, com.vivo.pushservice, com.vivo.assistant, com.vivo.assistantfunction, com.bbk.iqoo.logsystem, com.bbk.cloud, com.vivo.doubleinstance, com.vivo.floatingball, com.vivo.gamewatch, com.vivo.minscreen, com.vivo.SmartKey, com.vivo.vms, com.vivo.vtouch, com.vivo.weather.provider. On the same phone com.vivo.weather, com.vivo.browser, com.vivo.easyshare, com.vivo.compass and most vivo widgets uninstalled fine.
+   On Android 17 or newer (SDK 37+), say once, above the lists, that the phone may refuse every uninstall of a preinstalled app (see Phase 1), so these lists may end up being disabled instead of uninstalled.
+   Mark every "already off" app (Phase 2) as "(already off)". Its everyday line should say so, because it is not running now and removing it changes little.
+   Partner placeholders: some preinstalled partner apps have no app icon. resolve-activity with category LAUNCHER prints "No activity found", and they are often already off. Tested on Motorola / Android 17: com.ertanto.kompas.official and com.zte.iptvclient.android.idmnc. List them in Recommended as partner preloads (AI), marked "(already off)" where that applies.
    Say once, above the lists: "If the phone refuses some apps, I keep going and ask you at the end whether to disable them instead."
 3. If no Glance or lock-screen feed was found, say so clearly, and list the package names you checked for.
 4. The PROTECTED apps from Phase 2, so I know they will be kept.
@@ -273,10 +282,12 @@ Before the first change, create these files in the current folder:
 If you cannot write files, show me the full content of each file at the end so I can save it.
 
 For EACH approved package, in this exact order:
-1. FIRST add its restore command(s) to both rollback files. Insert them directly below the first line of each file (not at the end), so the files undo the newest change first:
+1. FIRST add its restore command(s) to both rollback files. Insert them directly below the header lines of each file (the first line, plus the "set ADB" lines from Phase 0), not at the end, so the files undo the newest change first:
      uninstalled:          adb shell cmd package install-existing --user 0 <package>
                            (on Android 7 or older: adb shell pm install-existing --user 0 <package>)
      disabled:             adb shell pm enable --user 0 <package>
+                           (ONLY if the package was NOT in packages_before_disabled.txt. Never add an enable line
+                            for an app that was already off before the session: the undo file would turn it on.)
      restricted or muted:  adb shell cmd appops set <package> <op> <the mode you recorded before>
                            (one line per op you changed)
 2. THEN make the change:
@@ -298,6 +309,9 @@ For EACH approved package, in this exact order:
      - "Failure [DELETE_FAILED_INTERNAL_ERROR]" (seen on OPPO / realme / OnePlus and on vivo / iQOO, for example com.vivo.magazine on OriginOS): the system protects that app from uninstalling. It stays installed and unchanged (check with adb shell pm list packages <package>). For an A4 store, Mute it automatically instead (see A4).
      - "Failure [DELETE_FAILED_USER_RESTRICTED]": on Xiaomi, it usually means "USB debugging (Security settings)" is off. Name that switch in the end-of-pass summary. On vivo / iQOO, the system blocks that app (tested: com.vivo.appstore). The app stays installed and unchanged. For an A4 store, Mute it automatically instead (see A4).
      - "Failure [not installed for 0]": the app was already removed.
+     - "Failure [only root can delete system app for a particular user]" (tested on Motorola / Android 17, for every preinstalled app): the system blocks uninstalling preinstalled apps without root. The app stays installed and unchanged. Keep trying the rest of the list (each try is quick and harmless), and offer "disable instead" at the end. The install-existing rollback lines already written for these apps are harmless: running them on an installed app changes nothing. For an A4 store, Mute it automatically instead (see A4).
+     - "Failure: package is non-disable" (tested on Motorola / Android 17: com.motorola.paks.notification, com.motorola.ccc.devicemanagement, com.amazon.appmanager): the system protects this app from being uninstalled and marks it as one that cannot be disabled. Do NOT offer "disable instead" for it. Report it as "protected by the phone", and suggest turning off its notifications by hand if it sends any.
+     - pm disable-user on an app that is already off: it fails with "java.lang.SecurityException: Shell cannot change component state for null to 3" (tested on Motorola / Android 17). This is not dangerous. The app stays off. Do not offer the disable fallback for apps that are "already off" (Phase 2), and never add an enable rollback line for them.
      - POST_NOTIFICATION reads back as "allow" on Android 13+, or SYSTEM_ALERT_WINDOW reads back as "default" or "allow" instead of "ignore": the system overrode the change (tested on realme UI 7: com.oplus.themestore read back "allow"). Log it as failed and, at the end, give me the manual Settings steps (or offer to uninstall the app instead, if it is in Group B).
    Any other failure is also logged as failed. Then continue, and explain it in the end-of-pass summary. If you had to stop early and I say to continue, resume from the next package. Do not redo packages that are already done.
 4. Add a line to removal_log.csv.
@@ -309,7 +323,8 @@ Show one short summary in plain words:
 - how many changes worked, and
 - one line per failed item: app name, why it failed, and a suggested fallback.
 Fallbacks:
-- A refused uninstall of an A1 feed or a Group B app: "disable instead" (pm disable-user --user 0), unless it is rated Unsafe or is on the HARD DENYLIST. Tested on OriginOS 6: com.vivo.magazine refused to uninstall but "pm disable-user" worked, and the lock screen then showed a normal wallpaper.
+- A refused uninstall of an A1 feed, an A2 ad app or a Group B app: "disable instead" (pm disable-user --user 0), unless it is rated Unsafe, is on the HARD DENYLIST, is "already off" (Phase 2), or was refused with "package is non-disable". Tested on OriginOS 6: com.vivo.magazine refused to uninstall but "pm disable-user" worked, and the lock screen then showed a normal wallpaper. Tested on Motorola / Android 17: 47 of the refused apps were disabled this way.
+  In the summary, give three numbers: apps to disable now, apps that were already off (nothing to do), and apps protected by the phone (nothing possible). Say that disabling frees RAM but not storage.
 - An A4 store: no question. It was already muted automatically (see A4). Just report it as "muted instead".
 - A restriction or mute that the system undid: give the manual Settings steps.
 Then ask me ONE question, for example: "Disable the 5 refused apps instead? (all / none / numbers)". Apply only the fallbacks I approve, rollback lines first (adb shell pm enable --user 0 <package>), with result checks as above. Then go to Phase 6. If nothing failed, go straight to Phase 6 without asking.
@@ -344,6 +359,7 @@ Do NOT restart again. Use the restart from Phase 6:
      adb shell pm list packages -d     ->  packages_after_disabled.txt
      adb shell pm list packages -f -u  ->  packages_after_all.txt
 3. Compare packages_before.txt with packages_after.txt. Every package that disappeared must be in removal_log.csv with the result "Success". Name any package that disappeared without being in the log (for example an app I uninstalled on the phone myself during the session), and do not count it as removed by you. Tested on realme UI 7: one game disappeared that no command had removed.
+4. Check that every app disabled with the result "Success" in removal_log.csv is in packages_after_disabled.txt. An app that is no longer disabled was turned back on by the phone during the restart. Tested on Motorola / Android 17: com.glance.lockscreenM was "disabled-user" before the restart and enabled again after it, while the other 46 stayed disabled. Then stop and tell me (this is unexpected). Offer ONE retry of the same disable, which I already approved (rollback line first), and check again with adb shell pm list packages -d <package> after adb shell sleep 30. Do not restart again for this. Also give me the Settings steps to turn the feature off, because a setting I change myself sticks better. Save packages_after_disabled.txt again after the retry so the report uses the final count. Tested: the retry worked and Glance stayed off.
 
 Then write the final report in the chat AND save it as report.md. It MUST contain this table, filled only with measured numbers:
 
@@ -365,8 +381,10 @@ Also report:
   a. Measured: the change in "Used" on /data between df_before.txt and df_after.txt.
   b. Estimated: the sum of App Size + Data Size + Cache Size for the removed packages, from diskstats_before.txt. If diskstats does not list a package, say so. On some phones (tested: HyperOS 3 / Android 16 and realme UI 7 / Android 16), diskstats has no "Package Names", "App Sizes", "App Data Sizes" or "Cache Sizes" lines at all, only partition totals. Then write "not measured: diskstats on this phone has no per-app sizes".
   Explain that preinstalled apps live on the read-only system partition, so their installation files stay on the phone. Only their updates, data and cache on /data are freed, so the storage freed can be small. That is expected.
+  If apps were only disabled and none uninstalled, the storage freed is 0: disabling keeps the app's files and data. "Used" on /data can even go up a little after a restart (tested on Motorola / Android 17: +20.6 MB). Say so plainly and do not present it as a loss caused by debloating.
 - RAM freed, two ways:
   a. Main number: the RAM the removed and disabled apps were using. Add up the PSS of the processes in meminfo_before.txt that belong to them (a process belongs to a package if its name equals the package name or starts with "<package>:"). After removal, these processes cannot run, so this RAM is freed.
+     Count only apps that are really gone or still disabled when you measure. Do NOT count muted app stores (they can still run when opened), apps that were already off before the session, or an app the phone turned back on (step 4). Show those separately. Tested on Motorola / Android 17: the main number was 246.1 MB. Glance (177.6 MB, turned back on and then disabled again) and the muted Indus Appstore (103.5 MB) were listed separately.
   b. Whole-phone change: the change in "Used RAM" between meminfo_before.txt and meminfo_after.txt.
   Explain that "before" was measured without a restart and "after" shortly after one (compare the uptimes). A freshly restarted phone usually uses less RAM anyway, so the whole-phone change includes the effect of the restart and must not be presented as RAM freed by debloating alone. Android also reuses free RAM for caching, so a difference under about 100 MB is within normal variation.
 - Counts: how many packages were uninstalled, disabled, restricted (pop-ups) and muted (app stores), and how many failed.
@@ -375,7 +393,7 @@ Also report:
     OnePlus (OxygenOS):                   Settings > Wallpapers & style (or Lock screen) > Lock screen magazine / Glance > turn off.
     Xiaomi / Redmi / POCO:                Settings > Lock screen > Glance (or Wallpaper carousel) > turn off.
     Samsung:                              Settings > Lock screen > Glance (or Wallpaper services) > choose None.
-    Motorola / Nothing:                   Settings > Lock screen (or Wallpaper) > Glance > turn off.
+    Motorola / Nothing:                   Settings > Lock screen (or Wallpaper) > Glance > turn off. (On Motorola / Android 17 a disabled Glance turned itself back on after the restart; see step 4.)
     vivo / iQOO (Funtouch / OriginOS):    Settings > Wallpaper & style (or Lock screen) > Lock screen poster (or Glance) > turn off, and choose a normal lock-screen wallpaper.
   Ask me to confirm on the phone that the lock screen no longer shows stories or ads.
 - App stores: which were removed, which were muted, and any that need notifications turned off by hand (Android 12 or older, or where POST_NOTIFICATION did not stick).
@@ -422,6 +440,7 @@ Read-only:
   adb shell sleep <seconds>
   adb shell uptime | adb shell cat /proc/uptime
   adb shell pm list packages <package>   (check whether one package is still installed)
+  adb shell pm list packages -d <package>   (check whether one package is still disabled)
 Changes (Phase 5 only, after my approval):
   adb shell pm uninstall --user 0 <package>
   adb shell pm disable-user --user 0 <package>
