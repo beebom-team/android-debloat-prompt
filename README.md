@@ -19,20 +19,15 @@ The first three are pre-selected on every phone, and you confirm them once with 
 | 🔕 | **Silences preinstalled app stores** that aren't Google Play (GetApps, Galaxy Store, App Market, vivo App Store and others) | Removes the store where it's safe to. Where the phone needs it (for example Samsung Pay needs Galaxy Store, or a phone without Google Play), it turns off the store's notifications and background activity instead |
 | 🧹 | **Removes bloatware**: preinstalled apps you don't need, such as duplicate OEM apps (browser, music, video, themes), Facebook and other partner apps, carrier apps, games and trackers | Lists every one with a plain-English description and a risk level (Recommended, Advanced, Expert), checked against the [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) community list. You pick what goes, for example `go + all Recommended`. Expert apps are only disabled, never uninstalled |
 
-At the end, the AI gives you a **before/after report** with measured numbers. These are the real results from the four phones we tested (Group A + all Recommended on each):
+At the end, the AI gives you a **before/after report** with measured numbers. Results from the phones we tested:
 
-| Phone | Apps installed | Storage used on /data | RAM used by the removed apps |
+| Phone | Apps uninstalled / disabled | RAM freed | Storage freed |
 |---|---|---|---|
-| REDMI Note 17 (HyperOS 3, Android 16) | 434 → 358 (−76) | 18.94 → 17.36 GiB (−1.57 GiB) | 468 MiB → 0 |
-| realme P4R (realme UI 7, Android 16) | 446 → 386 (−60) | 15.96 → 15.66 GiB (−0.30 GiB) | 103 MiB → 0 |
-| vivo T5 (OriginOS 6, Android 16) | 398 → 323 (−75)¹ | 17.58 → 12.94 GiB (−4.64 GiB)² | 370 MiB → 0 |
-| moto edge 70 fusion (Android 17) | 462 → 457 (−5), plus 48 disabled³ | 13.08 → 11.11 GiB (−1.97 GiB)⁴ | 420 MiB → 0⁵ |
-
-¹ Includes 7 apps the owner named in addition to Recommended.
-² Larger because 29 preinstalled "downloaded" apps († in the list) were deleted completely, APK and all.
-³ This Android 17 build refused every uninstall of a preinstalled app without root, so 48 of them were disabled instead (Glance, ad and promo apps, trackers, Indus Appstore and its home-screen widget). Disabled apps can't run, but they still count as installed. The 5 apps that were uninstalled are partner apps that finishing phone setup had installed: LinkedIn, Amazon Music, FIFA Heroes, Adobe Scan and Fitbit.
-⁴ Measured after phone setup was finished. Only the 5 uninstalled partner apps freed storage. Disabling frees none: in an earlier run on the same phone that only disabled apps, storage used went from 7.15 to 7.17 GiB.
-⁵ Over two runs: 246 MiB from the 47 apps disabled in the first run, and 174 MiB in the second (Indus Appstore and Fitbit). On this phone, Glance switches itself back on at every restart, so turn it off in Settings as well.
+| REDMI Note 17 | 76 / 0 | 468 MB | 1.6 GB |
+| realme P4R | 75 / 0 | 103 MB | 3.7 GB |
+| vivo T5 | 75 / 1 | 370 MB | 4.6 GB |
+| moto edge 70 fusion | 5 / 48 | 420 MB | 2.0 GB |
+| Samsung Galaxy M47 | 14 / 71 | 277 MB | 1.8 GB |
 
 Your numbers will differ. They come from your phone.
 
