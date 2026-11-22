@@ -24,7 +24,8 @@ HOW WE WORK
 - Never guess. If you are not sure what a package does, call it "unknown" and keep it.
 - Never invent a number. Every number in the final report must come from a command output saved in this session. If a number could not be measured, say "not measured" and why.
 - If any command fails or shows something unexpected, stop and explain before doing anything else.
-- Phases 0 to 3 are read-only (apart from restarting the phone). Nothing on the phone changes until I approve a list in Phase 4.
+- Phases 0 to 3 are read-only. Nothing on the phone changes until I approve a list in Phase 4.
+- Restart the phone only ONCE, after all approved changes are applied (Phase 6). Frequent restarts are annoying. The only exception is if something breaks and must be undone.
 
 =====================================================================
 PHASE 0: PREFLIGHT (read-only)
@@ -94,15 +95,11 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
      adb shell dumpsys diskstats   ->  diskstats_before.txt
      adb shell df /data            ->  df_before.txt
 
-4. RAM "before" measurement. RAM readings are only comparable on a freshly started phone, so:
-   a. Tell me the phone will restart, then run: adb reboot
-   b. adb wait-for-device
-   c. adb shell getprop sys.boot_completed   (repeat until it prints 1)
-   d. Ask me to unlock the phone once, then leave it untouched with the screen off.
-   e. adb shell sleep 180                     (wait 3 minutes for startup to settle)
-   f. adb shell dumpsys meminfo   ->  meminfo_before.txt
-   g. adb shell dumpsys battery   ->  battery_before.txt
-   From meminfo_before.txt, record "Total RAM", "Free RAM" and "Used RAM".
+4. RAM "before" measurement. Do NOT restart the phone for this.
+   a. adb shell uptime            ->  uptime_before.txt   (how long the phone has been on)
+   b. adb shell dumpsys meminfo   ->  meminfo_before.txt
+   c. adb shell dumpsys battery   ->  battery_before.txt
+   From meminfo_before.txt, record "Total RAM", "Free RAM" and "Used RAM", and the PSS of every process (you need these in Phase 7 to work out how much RAM the removed apps were using).
 
 =====================================================================
 PHASE 3: BUILD THE CANDIDATE LIST (read-only)
@@ -152,6 +149,7 @@ A3. "Display over other apps" pop-ups. Run:
      adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
    (If this is not supported on this Android version, say so and skip A3.)
    List every app allowed to draw over other apps that is NOT protected, NOT an accessibility service, and NOT a messaging, screen-recorder, floating-calculator, or video-player app I might use on purpose. Suggest restricting the rest.
+   Do not list an app here if it is already in A1, A2, A4 or Group B with the action "uninstall": uninstalling it removes its pop-ups anyway. If I later exclude that app from uninstalling, offer to restrict it instead.
    Action for A3: "Restrict" = first record the current mode with
      adb shell cmd appops get <package> SYSTEM_ALERT_WINDOW
    then set it to ignore. The rollback sets it back to the recorded mode.
@@ -224,7 +222,7 @@ Before the first change, create these files in the current folder:
 If you cannot write files, show me the full content of each file at the end so I can save it.
 
 For EACH approved package, in this exact order:
-1. FIRST add its restore command(s) to both rollback files:
+1. FIRST add its restore command(s) to both rollback files. Insert them directly below the first line of each file (not at the end), so the files undo the newest change first:
      uninstalled:          adb shell cmd package install-existing --user 0 <package>
                            (on Android 7 or older: adb shell pm install-existing --user 0 <package>)
      disabled:             adb shell pm enable --user 0 <package>
@@ -244,31 +242,30 @@ For EACH approved package, in this exact order:
    On any other result, log it as failed, do not try another method, and move on.
 4. Add a line to removal_log.csv.
 
-Order: Group A first, then Group B Recommended, then Advanced, then Expert. After each one:
-1. Run: adb reboot
-2. Then: adb wait-for-device
-3. Then: adb shell getprop sys.boot_completed   (repeat until it prints 1)
-4. Ask me to run the PHASE 6 checks before you start the next one.
+Order: Group A first, then Group B Recommended, then Advanced, then Expert, all in one pass. Do NOT restart the phone between groups. Keep going until every approved change is done, then go to Phase 6.
 
 =====================================================================
-PHASE 6: VERIFY
+PHASE 6: ONE RESTART, THEN VERIFY
 =====================================================================
-Ask me to check each of these on the phone and tell you the result:
-  unlock (PIN, fingerprint, face) | lock screen shows a normal wallpaper and no stories feed | home screen | make AND receive a call | send AND receive an SMS | mobile data | Wi-Fi | Bluetooth | camera photo and video | a notification from a messaging app | Play Store opens and can update an app | alarms | banking or payment apps open | system update screen opens
+1. Tell me the phone will now restart once, then run: adb reboot
+2. adb wait-for-device
+3. adb shell getprop sys.boot_completed   (repeat until it prints 1)
+4. Ask me to unlock the phone once.
+5. Ask me to check each of these on the phone and tell you the result:
+     unlock (PIN, fingerprint, face) | lock screen shows a normal wallpaper and no stories feed | home screen | make AND receive a call | send AND receive an SMS | mobile data | Wi-Fi | Bluetooth | camera photo and video | a notification from a messaging app | Play Store opens and can update an app | alarms | banking or payment apps open | system update screen opens
 
-If something broke:
-1. Undo the most recent group or tier with its rollback commands.
-2. Reboot and check again.
-3. Then narrow it down: re-apply half of that group at a time until the package that causes the problem is found, and keep it.
+If something broke (this is the only case where another restart is allowed):
+1. Undo the newest group or tier with its rollback commands (Expert first, then Advanced, then Recommended, then Group A).
+2. Restart and check again. Repeat until the problem is gone.
+3. Then narrow it down: re-apply half of the last undone group at a time until the package that causes the problem is found, and keep that package.
 
 =====================================================================
 PHASE 7: "AFTER" MEASUREMENTS AND FINAL REPORT
 =====================================================================
-Measure "after" exactly the same way as "before":
-1. adb reboot, then adb wait-for-device, then repeat adb shell getprop sys.boot_completed until it prints 1.
-2. Ask me to unlock the phone once, then leave it untouched with the screen off.
-3. adb shell sleep 180
-4. Save:
+Do NOT restart again. Use the restart from Phase 6:
+1. Wait until the phone has been on for at least 3 minutes since that restart (adb shell sleep 180 if needed).
+2. Save:
+     adb shell uptime                  ->  uptime_after.txt
      adb shell dumpsys meminfo         ->  meminfo_after.txt
      adb shell df /data                ->  df_after.txt
      adb shell pm list packages        ->  packages_after.txt
@@ -287,8 +284,10 @@ Then write the final report in the chat AND save it as report.md. It MUST contai
   | Disabled apps                         |        |       |        |
   | Storage used on /data                 |        |       |        |
   | Storage free on /data                 |        |       |        |
-  | Used RAM (3 min after restart)        |        |       |        |
-  | Free RAM (3 min after restart)        |        |       |        |
+  | RAM used by the removed apps (PSS)    |        |   0   |        |
+  | Used RAM (whole phone)                |        |       |        |
+  | Free RAM (whole phone)                |        |       |        |
+  | Phone on-time when measured (uptime)  |        |       |        |
 
 Also report:
 - Storage freed, two ways:
@@ -296,9 +295,9 @@ Also report:
   b. Estimated: the sum of App Size + Data Size + Cache Size for the removed packages, from diskstats_before.txt. If diskstats does not list a package, say so.
   Explain that preinstalled apps live on the read-only system partition, so their installation files stay on the phone. Only their updates, data and cache on /data are freed, so the storage freed can be small. That is expected.
 - RAM freed, two ways:
-  a. Measured: the change in "Used RAM" between meminfo_before.txt and meminfo_after.txt.
-  b. Attributed: the total PSS of processes in meminfo_before.txt that belong to removed or disabled packages (a process belongs to a package if its name equals the package name or starts with "<package>:").
-  Explain that Android reuses free RAM for caching, so the measured change can be smaller or larger than the attributed number, and a difference under about 100 MB is within normal variation.
+  a. Main number: the RAM the removed and disabled apps were using. Add up the PSS of the processes in meminfo_before.txt that belong to them (a process belongs to a package if its name equals the package name or starts with "<package>:"). After removal, these processes cannot run, so this RAM is freed.
+  b. Whole-phone change: the change in "Used RAM" between meminfo_before.txt and meminfo_after.txt.
+  Explain that "before" was measured without a restart and "after" shortly after one (compare the uptimes). A freshly restarted phone usually uses less RAM anyway, so the whole-phone change includes the effect of the restart and must not be presented as RAM freed by debloating alone. Android also reuses free RAM for caching, so a difference under about 100 MB is within normal variation.
 - Counts: how many packages were uninstalled, disabled, restricted (pop-ups) and muted (app stores), and how many failed.
 - Glance and lock-screen feeds: which were removed, which were restricted, and for any that could not be removed, the exact Settings steps to switch them off on this phone. Typical paths, which you should adapt to this phone's skin and version:
     OPPO / realme (ColorOS / realme UI):  Settings > Wallpapers & style (or Lock screen) > Lock screen magazine (or Glance) > turn off, and choose a normal lock-screen wallpaper.
@@ -334,6 +333,7 @@ Read-only:
   adb shell cmd appops get <package> <op>
   adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
   adb shell sleep <seconds>
+  adb shell uptime
 Changes (Phase 5 only, after my approval):
   adb shell pm uninstall --user 0 <package>
   adb shell pm disable-user --user 0 <package>
@@ -347,7 +347,7 @@ Restore:
   adb shell pm enable --user 0 <package>
   adb shell cmd appops set <package> <op> <recorded mode>
 Other:
-  adb reboot   (Phase 2, Phase 5 and Phase 7 only)
+  adb reboot   (once, in Phase 6; again only if something broke and was undone)
 
 Start with Phase 0 now.
 ```

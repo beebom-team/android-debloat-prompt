@@ -25,7 +25,7 @@ At the end, the AI gives you a **before/after report** with measured numbers:
 |---|---|---|---|
 | Apps installed | e.g. 214 | e.g. 171 | −43 |
 | Storage used on /data | … | … | … |
-| Used RAM (3 min after restart) | … | … | … |
+| RAM used by the removed apps | … | 0 | … |
 
 (Example numbers only. Yours come from your phone.)
 
@@ -40,7 +40,7 @@ It is designed to be as safe as possible, but no tool can promise it works on ev
 - **An undo file is written first.** Before each removal, the AI adds the restore command to `rollback.bat` (Windows) and `rollback.sh` (Mac/Linux).
 - **Important apps are protected.** The AI is told never to touch your dialer, SMS app, keyboard, home screen, Play Store, Google Play services, camera, emergency alerts, security, or system update components.
 - **Numbers are measured, not guessed.** The AI must take every number in the report from a command it ran, or say "not measured".
-- **It goes in small steps.** The AI removes one group at a time, then restarts the phone and asks you to test calls, SMS, camera and other basics.
+- **Only one restart.** The AI applies everything you approved, then restarts the phone once at the end and asks you to test calls, SMS, camera and other basics. If something broke, it undoes the newest group first.
 
 **Do not use this on a work or school phone** that your organisation manages. The prompt detects this and stops.
 
@@ -121,7 +121,7 @@ You should see one line ending in `device`. If it says `unauthorized`, unlock th
 A chat AI usually can't download the UAD-ng list. It will tell you so, and mark its ratings as "AI knowledge, unverified". Be more cautious with those, or use Option A.
 
 ### Step 5: Review the list carefully
-The AI restarts the phone once and measures it first (the "before" numbers). This takes about 5 minutes. Then it shows you:
+The AI measures the phone first (the "before" numbers), without restarting it. Then it shows you:
 
 | Group | What it means | Selected? |
 |---|---|---|
@@ -138,8 +138,8 @@ Reply with exactly what to apply, for example:
 
 The AI will not change anything you didn't approve.
 
-### Step 6: Test after each group
-After each group, the AI restarts the phone. Then check:
+### Step 6: Test after the restart
+When every approved change is done, the AI restarts the phone once. Unlock it, then check:
 
 - [ ] Unlock works (PIN, fingerprint, face)
 - [ ] The lock screen shows a normal wallpaper, with no stories or ads
@@ -154,13 +154,13 @@ After each group, the AI restarts the phone. Then check:
 - [ ] Banking or payment apps open
 - [ ] Settings → System update opens
 
-Tell the AI the result. If something broke, it restores that group and narrows down which app caused it.
+Tell the AI the result. If something broke, it undoes the newest group first (one extra restart each time) and narrows down which app caused it.
 
 ### Step 7: Read your report
-When everything works, the AI restarts the phone once more, measures it the same way, and gives you `report.md` with:
+When everything works, the AI measures the phone again (no extra restart) and gives you `report.md` with:
 - **Apps:** how many were installed before and after (preinstalled and downloaded counted separately)
 - **Storage freed:** measured on the phone, plus an estimate from the removed apps' sizes
-- **RAM freed:** measured 3 minutes after a restart, plus the RAM the removed apps were using
+- **RAM freed:** the RAM the removed apps were using, plus the whole-phone before/after change (with a note that part of that change comes from the restart)
 - **What happened to Glance and each app store,** and how to turn off anything that could only be blocked
 
 Storage freed is often smaller than people expect. Preinstalled apps live on a read-only part of the phone, so only their updates, data and cache can be freed. The report explains this.
@@ -200,7 +200,8 @@ If an app store was muted, or an app's pop-ups were blocked, the exact restore l
 | `packages_before*.txt` / `packages_after*.txt` | App lists before and after (all, preinstalled, downloaded, disabled) |
 | `rollback.bat` / `rollback.sh` | Undo commands for every change |
 | `removal_log.csv` | What was changed, when, and whether it worked |
-| `meminfo_before.txt` / `meminfo_after.txt` | RAM readings, each taken 3 minutes after a restart |
+| `meminfo_before.txt` / `meminfo_after.txt` | RAM readings, including how much each app was using |
+| `uptime_before.txt` / `uptime_after.txt` | How long the phone had been on at each reading |
 | `df_before.txt` / `df_after.txt` | Storage readings |
 | `diskstats_before.txt` | Size of each app before removal |
 | `battery_before.txt` | Battery level and temperature |
