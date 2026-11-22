@@ -270,7 +270,7 @@ Android 5 and newer from any brand. On Android 17, the phone may refuse to unins
 
 ## Credits
 
-Created by Ramjie Wassane from [Beebom](https://beebom.com).
+Created by [Ramjie Wassane](https://x.com/ramjie) from [Beebom](https://beebom.com).
 
 App ratings come from the [Universal Android Debloater Next Generation](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) community list. If you prefer a desktop app with buttons instead of an AI, use UAD-ng directly.
 
