@@ -16,8 +16,8 @@ The first three are pre-selected on every phone, and you confirm them once with 
 |---|---|---|
 | 🔒 | **Removes Glance and lock-screen "stories" feeds** on every brand: Glance on Samsung, Xiaomi, Motorola, Nothing and others; Lock Screen Magazine on OPPO, realme and OnePlus; vivo Magazine; Wallpaper Carousel; Huawei/Honor Magazine; Tecno/Infinix feeds | Uninstalls them. If the feed is built into the lock screen itself (some OPPO/realme/OnePlus phones), it blocks the feed instead and shows you the exact switch to turn it off in Settings |
 | 🚫 | **Stops ad pop-ups** | Removes ad services (for example Xiaomi MSA, App Vault, AppCloud, Digital Turbine), and blocks "display over other apps" for apps that shouldn't have it |
-| 🔕 | **Silences preinstalled app stores** that aren't Google Play (GetApps, Galaxy Store, App Market, vivo App Store and others) | Removes the store where it's safe to. Where the phone needs it (for example Samsung Pay needs Galaxy Store, or a phone without Google Play), it turns off the store's notifications and background activity instead |
-| 🧹 | **Removes bloatware**: preinstalled apps you don't need, such as duplicate OEM apps (browser, music, video, themes), Facebook and other partner apps, carrier apps, games and trackers | Lists every one with a plain-English description and a risk level (Recommended, Advanced, Expert), checked against the [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) community list. You pick what goes, for example `go + all Recommended`. Expert apps are only disabled, never uninstalled |
+| 🔕 | **Silences preinstalled app stores** that aren't Google Play (Indus Appstore, GetApps, Galaxy Store, App Market, vivo App Store and others) | Removes the store where it's safe to. Where the phone needs it (for example Samsung Pay needs Galaxy Store, or a phone without Google Play), it turns off the store's notifications and background activity instead |
+| 🧹 | **Removes bloatware**: preinstalled apps you don't need, such as duplicate OEM apps (browser, music, video, themes), Facebook and other partner apps (for example Dailyhunt, Josh, ShareChat, Moj, Paytm and preloaded loan apps), preinstalled games and trackers | Lists every one with a plain-English description and a risk level (Recommended, Advanced, Expert), checked against the [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) community list. You pick what goes, for example `go + all Recommended`. Expert apps are only disabled, never uninstalled |
 
 At the end, the AI gives you a **before/after report** with measured numbers. Results from the phones we tested:
 
@@ -27,7 +27,7 @@ At the end, the AI gives you a **before/after report** with measured numbers. Re
 | realme P4R | 75 / 0 | 103 MB | 3.7 GB |
 | vivo T5 | 75 / 1 | 370 MB | 4.6 GB |
 | moto edge 70 fusion | 5 / 48 | 420 MB | 2.0 GB |
-| Samsung Galaxy M47 | 14 / 71 | 277 MB | 1.8 GB |
+| Samsung Galaxy M47 | 17 / 71 | 277 MB | 1.8 GB |
 
 Your numbers will differ. They come from your phone.
 
@@ -39,7 +39,8 @@ It is designed to be as safe as possible, but no tool can promise it works on ev
 
 - **Nothing is deleted from the phone's system.** Apps are removed only for your user profile (`pm uninstall --user 0`). For apps that are part of the system, the installation file stays on the phone, so they can be restored with one command or by a factory reset. The removed apps' own data and cache are deleted; that's what frees storage.
 - **Some preinstalled apps are really "downloaded" apps** (for example partner games, Mi Store or WPS Office on Xiaomi, or vivo Feedback, which lives in `/system/custom/app` on vivo phones). These are deleted completely, and the undo file can't bring them back; you reinstall them from the Play Store. The AI marks them with † in the list so you know before you approve.
-- **Apps you probably use are never in a "remove all" choice.** UAD-ng rates apps like WhatsApp, Instagram, Google Pay and Gmail as removable. The AI puts them in a separate "Probably yours" list and removes one only if you name it. Preinstalled partner apps and games (for example Candy Crush, Block Blast, Snapchat, LinkedIn, ChatGPT, Amazon, Meesho, and on Samsung phones in India Paytm, JioHotstar, Firefox and Adobe Express) do count as bloatware: they are included in "Recommended" and marked † so you can exclude any you use.
+- **Apps you probably use are never in a "remove all" choice.** UAD-ng rates apps like WhatsApp, Instagram, Google Pay and Gmail as removable. The AI puts them in a separate "Probably yours" list and removes one only if you name it. The same goes for **UPI and banking apps** (PhonePe, Google Pay, BHIM, your bank's app), **government apps** (Sanchar Saathi, DigiLocker, UMANG, mAadhaar), **operator apps** (MyJio, Airtel Thanks, Vi) and **Truecaller**, even when they came preinstalled.
+- **Preinstalled partner apps and games do count as bloatware**, for example Candy Crush, Block Blast, Dailyhunt, Josh, ShareChat, Moj, Snapchat, LinkedIn, ChatGPT, Amazon, Flipkart, Meesho, JioHotstar, a preinstalled Paytm, and every preloaded loan app. They are in "Recommended" and marked †, so you can leave out any you use.
 - **You approve every removal.** The AI stops and shows you a table first.
 - **An undo file is written first.** Before each removal, the AI adds the restore command to `rollback.bat` (Windows) and `rollback.sh` (Mac/Linux).
 - **Important apps are protected.** The AI is told never to touch your dialer, SMS app, keyboard, home screen, Play Store, Google Play services, camera, emergency alerts, security, or system update components.
@@ -97,7 +98,7 @@ adb version
 ### Step 3: Turn on USB debugging on the phone
 1. Open **Settings → About phone**.
 2. Tap **Build number** 7 times until it says "You are now a developer". On some phones it's under **Software information** (Samsung) or **MIUI/HyperOS version** (Xiaomi).
-3. Go back to **Settings → System → Developer options** (on some phones, **Settings → Additional settings → Developer options**).
+3. Go back to **Settings → System → Developer options**. On Xiaomi, realme, OPPO and vivo it's usually **Settings → Additional settings → Developer options**; on Samsung it's at the bottom of the main **Settings** list. If you can't find it, type "Developer options" in the search bar at the top of Settings.
 4. Turn on **USB debugging**.
    - **Xiaomi/Redmi/POCO:** also turn on **USB debugging (Security settings)**. This needs a SIM card and a Mi account.
 5. Connect the phone to your computer with the USB cable.
@@ -123,6 +124,8 @@ You should see one line ending in `device`. If it says `unauthorized`, unlock th
 3. When the AI shows you the contents of the undo files, save them in that folder with the exact names it gives (`rollback.bat`, `rollback.sh`).
 
 A chat AI usually can't download the UAD-ng list. It will tell you so, and mark its ratings as "AI knowledge, unverified". Be more cautious with those, or use Option A.
+
+**Your language:** after pasting the prompt, you can write to the AI in Hindi, Tamil, Telugu, Bengali, Marathi or any other language, and it will reply in that language. Commands and app names stay in English.
 
 ### Step 5: Review the list carefully
 The AI measures the phone first (the "before" numbers), without restarting it. Then it shows you:
@@ -170,6 +173,7 @@ When everything works, the AI measures the phone again (no extra restart) and gi
 - **Storage freed:** measured on the phone, plus an estimate from the removed apps' sizes
 - **RAM freed:** the RAM the removed apps were using, plus the whole-phone before/after change (with a note that part of that change comes from the restart)
 - **What happened to Glance and each app store,** and how to turn off anything that could only be blocked
+- **Ad switches you must turn off yourself:** some ads come from apps that have to stay, such as Xiaomi's Security and Themes apps or realme's "Hot Apps" folders. The report gives you the exact switches in Settings
 
 Storage freed is often smaller than people expect. Preinstalled apps live on a read-only part of the phone, so only their updates, data and cache can be freed. The report explains this.
 
@@ -181,7 +185,7 @@ Finally, the AI asks **"Do you want to remove any more apps?"** and shows what's
 
 **Undo everything:** connect the phone with USB debugging on, open a terminal in the folder with the undo files, and run:
 
-- **Windows:** `rollback.bat`
+- **Windows (PowerShell):** `.\rollback.bat` (in Command Prompt, just `rollback.bat`)
 - **macOS / Linux:** `sh rollback.sh`
 
 **Undo one app:**
@@ -225,7 +229,7 @@ Keep the folder. Your undo files are in it.
 
 | Problem | Fix |
 |---|---|
-| `adb` is not recognized | Reopen the terminal after installing, or run commands from inside the platform-tools folder. If you unzipped it to `C:\platform-tools`, an AI that runs commands finds it there and uses the full path |
+| `adb` is not recognized | Reopen the terminal after installing, or run commands from inside the platform-tools folder (in PowerShell, type `.\adb` instead of `adb` there). If you unzipped it to `C:\platform-tools`, an AI that runs commands finds it there and uses the full path |
 | `adb devices` shows nothing | Use a different cable (many cables are charge-only), choose **File transfer** mode, toggle USB debugging off and on, then run `adb kill-server` |
 | `unauthorized` | Unlock the phone and tap **Allow** on the prompt. No prompt? Turn on **Developer options → Revoke USB debugging authorizations**, then reconnect |
 | `Failure [DELETE_FAILED_USER_RESTRICTED]` on Xiaomi | Turn on **USB debugging (Security settings)** in Developer options |
@@ -238,6 +242,8 @@ Keep the folder. Your undo files are in it.
 | `Shell cannot change component state for null to 3` | The app was already disabled before you started. Nothing to do |
 | The AI can't find an app by the name shown on the phone | Some preinstalled apps use random-looking package names (on a tested vivo phone, "Axe Ace" and "EVO" were `com.kncbetru.weryu` and `com.lgzddt.sk.yfv.opcyzl.bitjiz`). The AI narrows it down by elimination and asks you to confirm. To check yourself: **Settings → Apps → (the app) → App details** opens its Play Store page, and the address contains the package name |
 | An app store still sends notifications after it was muted | On Android 13 and newer, the phone can undo the notification block right away. Turn it off by hand: **Settings → Apps → (the store) → Notifications** |
+| `rollback.bat` is not recognized in PowerShell | Type `.\rollback.bat` (PowerShell only runs files from the current folder with `.\` in front) |
+| Ads still appear inside the phone's own apps (Security, Themes, File Manager) or in "Hot Apps" folders | These apps must stay, so their ads can only be turned off in Settings. Your report lists the exact switches. Search Settings for "recommendations" if you can't find one |
 | An app came back after a system update | Normal. Run the process again after big updates |
 | The phone is stuck on the logo after a restart | If `adb devices` still shows it, run the undo file. Otherwise, factory reset from recovery mode |
 
@@ -256,6 +262,9 @@ On Samsung, Glance has no app of its own. It comes from Samsung's "Wallpaper ser
 
 **Why wasn't Galaxy Store (or my phone's app store) removed?**
 Some stores are needed by the phone. Samsung Pay needs Galaxy Store, and on phones without Google Play the brand's store is the only way to install apps. In those cases the AI turns off the store's notifications and background activity instead, which stops the nagging.
+
+**Will it remove PhonePe, Google Pay, my bank app or Sanchar Saathi?**
+No, not unless you name the app yourself. UPI, banking, government and mobile-operator apps always go in the "Probably yours" list, even when they came preinstalled. A preinstalled Paytm and preloaded loan apps are treated as bloatware and listed under "Recommended". Leave Paytm out if you use it: after reinstalling it you have to sign in again.
 
 **Does it need root, or does it void my warranty?**
 No root is needed, and it doesn't unlock the bootloader. It uses only standard ADB commands.

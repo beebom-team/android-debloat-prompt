@@ -14,6 +14,8 @@ My main goals, in order:
 
 You detect my computer's operating system and my phone's brand and model yourself. Do not ask me for them.
 
+Talk to me in the language I write in (for example Hindi, Tamil, Telugu, Bengali, Marathi, Kannada, Malayalam, Gujarati or English), in simple words. Keep commands, package names and file names exactly as they are.
+
 =====================================================================
 HOW WE WORK
 =====================================================================
@@ -185,7 +187,7 @@ A3. "Display over other apps" pop-ups. Run:
 
 A4. Preinstalled app stores that are not Google Play. Never touch com.android.vending (Google Play Store).
    Find installed stores by package name or UAD-ng description, for example:
-     com.xiaomi.mipicks / com.xiaomi.market (GetApps), com.mi.global.shop (Mi Store), com.sec.android.app.samsungapps (Galaxy Store), com.heytap.market / com.oppo.market (OPPO / realme / OnePlus App Market), com.nearme.gamecenter (OPPO / realme Game Center, a games store), com.bbk.appstore (vivo App Store), com.huawei.appmarket (AppGallery), com.hihonor.appmarket (Honor App Market), com.transsnet.store (Palm Store), net.bat.store (AHA Games), com.lenovo.leos.appstore, and any other preinstalled store, including Indus Appstore (com.indus.appstore, not in UAD-ng; preinstalled on Motorola phones in India), that you can identify. Mark identifications without UAD-ng data "AI knowledge, unverified".
+     com.xiaomi.mipicks / com.xiaomi.market (GetApps), com.mi.global.shop (Mi Store), com.sec.android.app.samsungapps (Galaxy Store), com.heytap.market / com.oppo.market (OPPO / realme / OnePlus App Market), com.nearme.gamecenter (OPPO / realme Game Center, a games store), com.bbk.appstore (vivo App Store), com.huawei.appmarket (AppGallery), com.hihonor.appmarket (Honor App Market), com.transsnet.store (Palm Store), net.bat.store (AHA Games), com.lenovo.leos.appstore, and any other preinstalled store, including Indus Appstore (com.indus.appstore, not in UAD-ng; preinstalled on many phones sold in India, tested on Motorola and Xiaomi), that you can identify. Mark identifications without UAD-ng data "AI knowledge, unverified".
    Decide the action for each store:
    - If com.android.vending is NOT installed (for example a Huawei phone without Google), NEVER uninstall any store, because it may be the only way to install apps. Use "Mute".
    - If the store is rated Recommended by UAD-ng and Play Store is installed: uninstall for user 0.
@@ -210,12 +212,21 @@ Everything else installed that UAD-ng rates Recommended, Advanced or Expert:
 
 UAD-ng also rates many popular apps "Recommended", for example WhatsApp, Instagram, Facebook, Netflix, Spotify, Google Pay / Wallet, Gmail, Google Photos, Maps, YouTube, Drive and Files by Google. Uninstalling without -k deletes their data (chats, notes, downloads), so a reply like "all Recommended" must never remove them by accident. Put these, messaging, banking and payment apps, the phone maker's everyday tools (calculator, clock, gallery, notes, file manager, sound recorder, screen recorder), and anything in packages_before_downloaded.txt that I may have installed myself, in a separate list called "Probably yours: not suggested". It is not part of any tier, and you remove an app from it only if I name it.
 
+ALWAYS "Probably yours" (India and everywhere), even when the app was preinstalled as a partner app of the downloaded type:
+- UPI, payment, wallet and banking apps, for example PhonePe (com.phonepe.app), Google Pay (com.google.android.apps.nbu.paisa.user), BHIM (in.org.npci.upiapp), Amazon Pay, MobiKwik, CRED, and any bank's own app. Removing one logs me out, and setting it up again can need the SIM linked to my bank and an OTP. Exception: Paytm and loan apps are partner preloads (see below), not "Probably yours".
+- Government apps, for example Sanchar Saathi (com.dot.app.sancharsaathi), DigiLocker, UMANG, mAadhaar and Aarogya Setu.
+- Mobile-operator self-care apps, for example MyJio (com.jio.myjio), Airtel Thanks (com.myairtelapp) and Vi.
+- Caller-ID and spam-blocking apps, for example Truecaller (com.truecaller).
+
 PARTNER PRELOADS go into Recommended, NOT into "Probably yours". These are third-party apps the phone maker or carrier preinstalls for money. They are usually downloaded-type (path in /data/app, /my_preload, /my_stock/del-app, /product/data-app or /cust/app). If UAD-ng does not list one, mark it "AI knowledge, unverified". They include:
 - Casual games, for example Candy Crush, Block Blast, Vita Mahjong, Tile Explorer, Water Sort, Bubble Pop, Fruit Shooting, Word Connect, and other preinstalled games such as those from katanlabs.
 - Shopping and deals apps, for example Amazon, Meesho and Flipkart.
 - Commonly preloaded social, networking and AI apps, for example Snapchat, LinkedIn and ChatGPT.
-- Preloaded payment, streaming, browser and creative apps, for example Paytm (net.one97.paytm), JioHotstar (in.startv.hotstar), Firefox (org.mozilla.firefox) and Adobe Express (com.adobe.spark.post). None of these is in UAD-ng, so mark them (AI). Tested on a Samsung SM-M476B sold in India: all four were preinstalled downloaded-type apps (in packages_before_downloaded.txt) and uninstalled with "Success". The owner wanted Paytm, JioHotstar and Firefox removed, so put them in Recommended, not in "Probably yours", even though Paytm is a payment app and Firefox is a browser. Exception: if the app holds a PROTECTED role (for example Firefox is the default browser), keep it.
-Mark each one "†" and write in "What I lose": "Partner preload. If you use it, exclude it. Reinstall it from the Play Store." For Paytm, add: "You must sign in again after reinstalling." WhatsApp, Instagram, Facebook, Netflix and Spotify stay in "Probably yours" even when they were preloaded.
+- Preloaded streaming, browser and creative apps, for example JioHotstar (in.startv.hotstar), Firefox (org.mozilla.firefox) and Adobe Express (com.adobe.spark.post). None of these is in UAD-ng, so mark them (AI). Tested on a Samsung SM-M476B sold in India: all three were preinstalled downloaded-type apps (in packages_before_downloaded.txt) and uninstalled with "Success". Exception: if the app holds a PROTECTED role (for example Firefox is the default browser), keep it.
+- Indian news, short-video and social preloads, for example Dailyhunt (com.eterno), Josh (com.eterno.shortvideos), ShareChat (in.mohalla.sharechat) and Moj (in.mohalla.video); shopping, travel and food apps such as Flipkart, Myntra, Swiggy, Zomato and Agoda; and preloaded fantasy-sports, rummy, poker or other real-money games.
+- Paytm (net.one97.paytm) when it came preinstalled. Not in UAD-ng, so mark it (AI). Tested on a Samsung SM-M476B sold in India: preinstalled downloaded-type, uninstalled with "Success". In "What I lose" add: "You must sign in again after reinstalling."
+- Every preloaded loan, credit and "instant cash" app, from any lender, for example Mi Credit on Xiaomi and FinShell Pay (com.finshell.fin) on OPPO / realme (tested on realme UI 7: uninstalled with "Success").
+Mark each one "†" and write in "What I lose": "Partner preload. If you use it, exclude it. Reinstall it from the Play Store." WhatsApp, Instagram, Facebook, Netflix and Spotify, and every app in the "ALWAYS Probably yours" list above (payment, banking, government, operator and caller-ID apps), stay in "Probably yours" even when they were preloaded. If I name one of them myself, remove it, and tell me first that I must sign in again after reinstalling it from the Play Store.
 
 SAMSUNG (One UI), tested on SM-M476B / One UI 9 / Android 17:
 - Put these Samsung promo apps in Recommended under "Ads and promos": com.mygalaxy and com.mygalaxy.service (My Galaxy deals hub), com.samsung.ecomm.global.in (Samsung Shop), com.samsung.android.app.spage (Samsung Free news panel), com.samsung.android.setupindiaservicestnc (nag after every update to accept data collection), com.sec.android.app.chromecustomizations, and com.samsung.sree (Samsung Global Goals, ad-funded, not in UAD-ng: AI).
@@ -408,9 +419,15 @@ Also report:
     vivo / iQOO (Funtouch / OriginOS):    Settings > Wallpaper & style (or Lock screen) > Lock screen poster (or Glance) > turn off, and choose a normal lock-screen wallpaper.
   Ask me to confirm on the phone that the lock screen no longer shows stories or ads.
 - App stores: which were removed, which were muted, and any that need notifications turned off by hand (Android 12 or older, or where POST_NOTIFICATION did not stick).
+- Ads that only a switch in Settings can stop. Some ads and "recommended apps" come from apps that must stay installed, and no allowed command can switch them off. Give me the steps for this phone, adapted to its skin and version, and tell me that if a menu is not where you say, I can type its name into the search bar at the top of Settings. Typical places:
+    Xiaomi / Redmi / POCO:  in Security, Themes, File Manager, Music, Downloads and Mi Browser, open the app's own Settings and turn off "Receive recommendations" or "Online content"; if com.miui.msa.global was NOT removed, also turn it off under "Authorization & revocation" (search Settings for it).
+    OPPO / realme / OnePlus: long-press the home screen > Home screen settings > turn off "App suggestions" (or similar); delete the "Hot Apps" and "Hot Games" folders (they are sponsored shortcuts, not apps).
+    Samsung:                search Settings for "Customization Service" and turn it off; in Galaxy Store > Settings, turn off marketing notifications.
+    vivo / iQOO:            in V-Appstore and the vivo Browser (if they are still there), open their Settings and turn off push and recommendations.
+  Name only apps that are still installed on this phone.
 - Failed items: each one, why it failed, and what I can do by hand instead.
 - The files created and where they are.
-- How to undo everything: connect the phone, enable USB debugging, open a terminal in this folder, and run rollback.bat (Windows) or sh rollback.sh (macOS/Linux). List the downloaded-type apps (†) that the undo file cannot bring back, and say that they can be reinstalled from the Play Store.
+- How to undo everything: connect the phone, enable USB debugging, open a terminal in this folder, and run .\rollback.bat (Windows PowerShell; in Command Prompt type rollback.bat) or sh rollback.sh (macOS/Linux). List the downloaded-type apps (†) that the undo file cannot bring back, and say that they can be reinstalled from the Play Store.
 - That major system updates can bring some apps back, and this process can be run again afterwards.
 No claims beyond what the measurements show.
 
@@ -431,7 +448,7 @@ Next to the question, show a short numbered list of what is still possible: the 
 =====================================================================
 IF THE PHONE WILL NOT BOOT
 =====================================================================
-- If "adb devices" still shows the phone (even while it is stuck on the logo), run rollback.bat or rollback.sh, then adb reboot.
+- If "adb devices" still shows the phone (even while it is stuck on the logo), run .\rollback.bat (Windows PowerShell) or sh rollback.sh, then adb reboot.
 - If adb cannot reach it, a factory reset from recovery mode brings back every removed app, but it erases the phone's data. This is why we back up in Phase 0.
 
 =====================================================================
