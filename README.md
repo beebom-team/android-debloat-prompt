@@ -142,6 +142,8 @@ You can also approve a whole heading, for example `go + Recommended, Tracking an
 
 The AI will not change anything you didn't approve.
 
+While the AI applies your changes, it doesn't stop to ask you anything. If the phone refuses to remove an app, the AI logs it and keeps going; a refused app store is muted automatically. When everything has been tried, it shows a short summary and asks you **once** whether to disable the refused apps instead.
+
 ### Step 6: Test after the restart
 When every approved change is done, the AI restarts the phone once. Unlock it, then check:
 
@@ -227,7 +229,7 @@ Keep the folder. Your undo files are in it.
 | `Failure [DELETE_FAILED_USER_RESTRICTED]` on Xiaomi | Turn on **USB debugging (Security settings)** in Developer options |
 | `Failure [not installed for 0]` | The app is already removed. Nothing to do |
 | `Failure [-1000]` on Xiaomi HyperOS | HyperOS protects some of Xiaomi's own apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder). The app stays as it was. Nothing broke |
-| `Failure [DELETE_FAILED_INTERNAL_ERROR]` on OPPO / realme / OnePlus | The phone protects some of its own apps (for example App Market, Game Center, Instant Games). The app stays as it was. Nothing broke. For an app store, the AI mutes it instead |
+| `Failure [DELETE_FAILED_INTERNAL_ERROR]` on OPPO / realme / OnePlus | The phone protects some of its own apps (for example App Market, Game Center, Instant Games). The app stays as it was. Nothing broke. For an app store, the AI automatically mutes it instead. vivo can also refuse with `DELETE_FAILED_USER_RESTRICTED`; it's handled the same way |
 | An app store still sends notifications after it was muted | On Android 13 and newer, the phone can undo the notification block right away. Turn it off by hand: **Settings → Apps → (the store) → Notifications** |
 | An app came back after a system update | Normal. Run the process again after big updates |
 | The phone is stuck on the logo after a restart | If `adb devices` still shows it, run the undo file. Otherwise, factory reset from recovery mode |

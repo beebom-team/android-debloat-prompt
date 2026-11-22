@@ -30,7 +30,7 @@ HOW WE WORK
 - Use only the commands in the ALLOWED COMMANDS section at the end. Never use root, never flash anything, never touch the bootloader, never run pm clear, rm, settings put, adb install, or any pm uninstall without --user 0.
 - Never guess. If you are not sure what a package does, call it "unknown" and keep it.
 - Never invent a number. Every number in the final report must come from a command output saved in this session. If a number could not be measured, say "not measured" and why.
-- If any command fails or shows something unexpected, stop and explain before doing anything else.
+- In Phases 0 to 4 and 6 to 8, if any command fails or shows something unexpected, stop and explain before doing anything else. In Phase 5, do NOT stop to ask me about a failed change: log it, keep going, and ask me once at the end (see Phase 5).
 - Phases 0 to 3 are read-only. Nothing on the phone changes until I approve a list in Phase 4.
 - Restart the phone only ONCE, after all approved changes are applied (Phase 6). Frequent restarts are annoying. The only exceptions are if something breaks and must be undone, or if I approve more removals in Phase 8 (one restart per extra round).
 
@@ -178,7 +178,7 @@ A4. Preinstalled app stores that are not Google Play. Never touch com.android.ve
    - If com.android.vending is NOT installed (for example a Huawei phone without Google), NEVER uninstall any store, because it may be the only way to install apps. Use "Mute".
    - If the store is rated Recommended by UAD-ng and Play Store is installed: uninstall for user 0.
    - If it is rated Advanced, Expert or Unsafe, or you are unsure (for example Galaxy Store, which Samsung Pay and Samsung app updates need): use "Mute".
-   - If the uninstall of an A4 store is refused in Phase 5 (for example "Failure [DELETE_FAILED_INTERNAL_ERROR]" or "Failure [-1000]"), Mute it in the same pass. This is the one allowed fallback, because muting is what stops the store's nags. Add its mute rollback lines first, as usual. Tested on realme UI 7 / Android 16: com.heytap.market and com.nearme.gamecenter both refused to uninstall.
+   - If the uninstall of an A4 store is refused in Phase 5 for ANY reason (for example "Failure [DELETE_FAILED_INTERNAL_ERROR]", "Failure [DELETE_FAILED_USER_RESTRICTED]" or "Failure [-1000]"), Mute it automatically, right away, in the same pass. Do not ask me: approving Group A already approves this. Add its mute rollback lines first, as usual, and log both the refused uninstall and the mute. Tested on realme UI 7 / Android 16: com.heytap.market and com.nearme.gamecenter both refused to uninstall. Tested on vivo OriginOS: com.vivo.appstore refused with DELETE_FAILED_USER_RESTRICTED.
    "Mute" = turn off its notifications and background activity, without uninstalling:
      For each of these app-ops: POST_NOTIFICATION (Android 13+ only), RUN_ANY_IN_BACKGROUND, RUN_IN_BACKGROUND
        first record the current mode: adb shell cmd appops get <package> <op>
@@ -246,7 +246,8 @@ Show:
    Number the items per tier (R1, R2 ... for Recommended, V1 ... for Advanced, E1 ... for Expert) so I can name them in my reply.
    Mark every downloaded-type package (Phase 2) with a "†". Explain "†" once, above the lists: "The undo file cannot restore it. Reinstall it from the Play Store." In review.md, write this in its "What I lose" column.
    On Xiaomi HyperOS, mark Xiaomi's own user-facing apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder) as "HyperOS may refuse this (Failure [-1000])". Tested on HyperOS 3: all seven were refused.
-   On OPPO / realme / OnePlus, mark com.heytap.market, com.nearme.gamecenter, com.nearme.instant.platform and com.oplus.olc as "may refuse this (Failure [DELETE_FAILED_INTERNAL_ERROR])". Tested on realme UI 7 / Android 16: all four were refused.
+   On OPPO / realme / OnePlus, mark com.heytap.market, com.nearme.gamecenter, com.nearme.instant.platform and com.oplus.olc as "may refuse this (Failure [DELETE_FAILED_INTERNAL_ERROR])". Tested on realme UI 7 / Android 16: all four were refused. On vivo / iQOO (OriginOS), mark com.vivo.magazine the same way: it was refused.
+   Say once, above the lists: "If the phone refuses some apps, I keep going and ask you at the end whether to disable them instead."
 3. If no Glance or lock-screen feed was found, say so clearly, and list the package names you checked for.
 4. The PROTECTED apps from Phase 2, so I know they will be kept.
 5. The "Probably yours: not suggested" list and the "left out for safety" list from Phase 3, as short comma-separated lists of everyday app names (package names only in review.md).
@@ -289,16 +290,28 @@ For EACH approved package, in this exact order:
      uninstall must print "Success".
      disable must print "new state: disabled-user".
      For restrict and mute, run adb shell cmd appops get <package> <op> and confirm it shows "ignore".
-   On any other result, log it as failed, do not try another method, and move on.
-   Known results that are not dangerous, so log them and keep going:
+   On any other result, log it as failed, do not try another method, and move on to the next package. Do NOT stop to ask me in the middle of the pass. I want every approved change done first, and all questions at the end.
+   The only reasons to stop early: the phone disconnects ("no devices", "device offline", "device not found"), or something suggests the phone itself is in trouble (it restarts on its own, or the screen goes black and stays black). Then stop, tell me, and wait.
+   Known results that are not dangerous (log them and keep going):
      - "Failure [-1000]" on Xiaomi HyperOS: the system protects that app from uninstalling. It stays installed and unchanged.
-     - "Failure [DELETE_FAILED_INTERNAL_ERROR]" on OPPO / realme / OnePlus: the system protects that app from uninstalling. It stays installed and unchanged (check with adb shell pm list packages <package>). For an A4 store, Mute it instead (see A4).
+     - "Failure [DELETE_FAILED_INTERNAL_ERROR]" (seen on OPPO / realme / OnePlus and on vivo / iQOO, for example com.vivo.magazine on OriginOS): the system protects that app from uninstalling. It stays installed and unchanged (check with adb shell pm list packages <package>). For an A4 store, Mute it automatically instead (see A4).
+     - "Failure [DELETE_FAILED_USER_RESTRICTED]": on Xiaomi, it usually means "USB debugging (Security settings)" is off. Name that switch in the end-of-pass summary. On vivo / iQOO, the system blocks that app (tested: com.vivo.appstore). The app stays installed and unchanged. For an A4 store, Mute it automatically instead (see A4).
      - "Failure [not installed for 0]": the app was already removed.
      - POST_NOTIFICATION reads back as "allow" on Android 13+, or SYSTEM_ALERT_WINDOW reads back as "default" or "allow" instead of "ignore": the system overrode the change (tested on realme UI 7: com.oplus.themestore read back "allow"). Log it as failed and, at the end, give me the manual Settings steps (or offer to uninstall the app instead, if it is in Group B).
-   Any other failure is unexpected: stop and explain before the next package. When I say to continue, resume from the next package. Do not redo packages that are already done.
+   Any other failure is also logged as failed. Then continue, and explain it in the end-of-pass summary. If you had to stop early and I say to continue, resume from the next package. Do not redo packages that are already done.
 4. Add a line to removal_log.csv.
 
-Order: Group A first, then Group B Recommended, then Advanced, then Expert, all in one pass. Do NOT restart the phone between groups. Keep going until every approved change is done, then go to Phase 6.
+Order: Group A first, then Group B Recommended, then Advanced, then Expert, all in one pass. Do NOT restart the phone between groups. Keep going until every approved change has been tried.
+
+AT THE END OF THE PASS (the only question in Phase 5):
+Show one short summary in plain words:
+- how many changes worked, and
+- one line per failed item: app name, why it failed, and a suggested fallback.
+Fallbacks:
+- A refused uninstall of an A1 feed or a Group B app: "disable instead" (pm disable-user --user 0), unless it is rated Unsafe or is on the HARD DENYLIST.
+- An A4 store: no question. It was already muted automatically (see A4). Just report it as "muted instead".
+- A restriction or mute that the system undid: give the manual Settings steps.
+Then ask me ONE question, for example: "Disable the 5 refused apps instead? (all / none / numbers)". Apply only the fallbacks I approve, rollback lines first (adb shell pm enable --user 0 <package>), with result checks as above. Then go to Phase 6. If nothing failed, go straight to Phase 6 without asking.
 
 =====================================================================
 PHASE 6: ONE RESTART, THEN VERIFY
@@ -377,7 +390,7 @@ After the report, always end by asking me:
   "Do you want to remove any more apps?"
 Next to the question, show a short numbered list of what is still possible: the Group B items I did not approve (by tier), the "Probably yours: not suggested" list, and any Group B apps that failed but could be disabled instead. Do not ask for anything or change anything else.
 - If I say no, we are done.
-- If I name apps or tiers, treat that as a new Phase 4 approval for only those items. Before applying them, save df_before_roundN.txt, meminfo_before_roundN.txt, uptime_before_roundN.txt and packages_before_roundN.txt (N = 2, 3, ...), so this round's own change can be measured. Apply them with Phase 5 (rollback lines first, newest first), then do one restart and the Phase 6 checks. Then update the report with new "after" numbers (Phase 7): one table for this round, and one for the totals since the first "before". Then ask this question again.
+- If I name apps or tiers, treat that as a new Phase 4 approval for only those items. Before applying them, save df_before_roundN.txt, meminfo_before_roundN.txt, uptime_before_roundN.txt and packages_before_roundN.txt (N = 2, 3, ...), so this round's own change can be measured. Apply them with Phase 5 (rollback lines first, newest first, no questions until the end of the pass), then do one restart and the Phase 6 checks. Then update the report with new "after" numbers (Phase 7): one table for this round, and one for the totals since the first "before". Then ask this question again.
 - I may name apps by the name shown on the phone, which often differs from the package name. Tested on realme UI 7: "Tile Explorer" was com.oakever.tiletrip, "Collect Ball" was com.katanlabs.matchballgame, "Worm family" was com.katanlabs.worm.ioeatemall. Show me a table of name → package before acting. Ask me if any match is uncertain, or if two installed packages could match.
 - If a name matches no installed package, say so and do not guess. On realme and OPPO, "Hot Apps" and "Hot Games" are usually home-screen folders of sponsored shortcuts, not installed apps: tell me to delete the folder or turn off its recommendations on the home screen.
 - If I name an app that is not on any list, check it against UAD-ng and the HARD DENYLIST first, and tell me what it is and what I would lose before doing anything.
