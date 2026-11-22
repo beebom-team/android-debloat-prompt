@@ -92,6 +92,7 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
    Count the lines in each file and write the counts down. These are the "apps before" numbers.
    (If you cannot write files, tell me to save each output myself, and write the counts in the chat.)
    From packages_before_all.txt (it shows each package's file path), mark every package that is in packages_before_downloaded.txt as "downloaded-type". This includes preinstalled apps whose path starts with /data/app, /product/data-app, /cust/app, /my_preload or /my_stock (for example partner games, Xiaomi's Notes, Calendar or Weather on some phones, and OPPO / realme apps in /my_stock/del-app or /my_preload/del-app). On a phone with one user, "pm uninstall --user 0" deletes a downloaded-type app completely. "install-existing" cannot bring it back, only the Play Store or a factory reset can. Tested on HyperOS 3 / Android 16: 18 downloaded-type apps were removed, and packages_all went from 434 to 416. Tested on realme UI 7 / Android 16: apps in /my_stock/del-app and /my_preload/del-app (Backup & Restore, realme Community, preinstalled games) were deleted completely too, and packages_all went from 446 to 426 over two rounds.
+   On vivo / iQOO (OriginOS), apps in /system/custom/app are NOT in packages_before_downloaded.txt, but "pm uninstall --user 0" still deletes them completely. Mark them downloaded-type (†) too. Tested on OriginOS 6 / Android 16: com.vivo.feedback (/system/custom/app/Feedback) disappeared from "pm list packages -f -u", and packages_all went from 398 to 369 over two rounds.
 
 2. Find the apps that currently fill an essential role. These are PROTECTED and must never be removed or restricted:
      Home screen:   adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
@@ -246,7 +247,7 @@ Show:
    Number the items per tier (R1, R2 ... for Recommended, V1 ... for Advanced, E1 ... for Expert) so I can name them in my reply.
    Mark every downloaded-type package (Phase 2) with a "†". Explain "†" once, above the lists: "The undo file cannot restore it. Reinstall it from the Play Store." In review.md, write this in its "What I lose" column.
    On Xiaomi HyperOS, mark Xiaomi's own user-facing apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder) as "HyperOS may refuse this (Failure [-1000])". Tested on HyperOS 3: all seven were refused.
-   On OPPO / realme / OnePlus, mark com.heytap.market, com.nearme.gamecenter, com.nearme.instant.platform and com.oplus.olc as "may refuse this (Failure [DELETE_FAILED_INTERNAL_ERROR])". Tested on realme UI 7 / Android 16: all four were refused. On vivo / iQOO (OriginOS), mark com.vivo.magazine the same way: it was refused.
+   On OPPO / realme / OnePlus, mark com.heytap.market, com.nearme.gamecenter, com.nearme.instant.platform and com.oplus.olc as "may refuse this (Failure [DELETE_FAILED_INTERNAL_ERROR])". Tested on realme UI 7 / Android 16: all four were refused. On vivo / iQOO (OriginOS), mark com.vivo.magazine the same way: it was refused. Also mark these vivo apps as "OriginOS may refuse this (Failure [DELETE_FAILED_USER_RESTRICTED])". Tested on OriginOS 6 / Android 16, all were refused: com.vivo.appstore, com.vivo.pushservice, com.vivo.assistant, com.vivo.assistantfunction, com.bbk.iqoo.logsystem, com.bbk.cloud, com.vivo.doubleinstance, com.vivo.floatingball, com.vivo.gamewatch, com.vivo.minscreen, com.vivo.SmartKey, com.vivo.vms, com.vivo.vtouch, com.vivo.weather.provider. On the same phone com.vivo.weather, com.vivo.browser, com.vivo.easyshare, com.vivo.compass and most vivo widgets uninstalled fine.
    Say once, above the lists: "If the phone refuses some apps, I keep going and ask you at the end whether to disable them instead."
 3. If no Glance or lock-screen feed was found, say so clearly, and list the package names you checked for.
 4. The PROTECTED apps from Phase 2, so I know they will be kept.
@@ -308,7 +309,7 @@ Show one short summary in plain words:
 - how many changes worked, and
 - one line per failed item: app name, why it failed, and a suggested fallback.
 Fallbacks:
-- A refused uninstall of an A1 feed or a Group B app: "disable instead" (pm disable-user --user 0), unless it is rated Unsafe or is on the HARD DENYLIST.
+- A refused uninstall of an A1 feed or a Group B app: "disable instead" (pm disable-user --user 0), unless it is rated Unsafe or is on the HARD DENYLIST. Tested on OriginOS 6: com.vivo.magazine refused to uninstall but "pm disable-user" worked, and the lock screen then showed a normal wallpaper.
 - An A4 store: no question. It was already muted automatically (see A4). Just report it as "muted instead".
 - A restriction or mute that the system undid: give the manual Settings steps.
 Then ask me ONE question, for example: "Disable the 5 refused apps instead? (all / none / numbers)". Apply only the fallbacks I approve, rollback lines first (adb shell pm enable --user 0 <package>), with result checks as above. Then go to Phase 6. If nothing failed, go straight to Phase 6 without asking.
@@ -374,7 +375,8 @@ Also report:
     OnePlus (OxygenOS):                   Settings > Wallpapers & style (or Lock screen) > Lock screen magazine / Glance > turn off.
     Xiaomi / Redmi / POCO:                Settings > Lock screen > Glance (or Wallpaper carousel) > turn off.
     Samsung:                              Settings > Lock screen > Glance (or Wallpaper services) > choose None.
-    Motorola / Nothing / vivo:            Settings > Lock screen (or Wallpaper) > Glance > turn off.
+    Motorola / Nothing:                   Settings > Lock screen (or Wallpaper) > Glance > turn off.
+    vivo / iQOO (Funtouch / OriginOS):    Settings > Wallpaper & style (or Lock screen) > Lock screen poster (or Glance) > turn off, and choose a normal lock-screen wallpaper.
   Ask me to confirm on the phone that the lock screen no longer shows stories or ads.
 - App stores: which were removed, which were muted, and any that need notifications turned off by hand (Android 12 or older, or where POST_NOTIFICATION did not stick).
 - Failed items: each one, why it failed, and what I can do by hand instead.
@@ -392,6 +394,8 @@ Next to the question, show a short numbered list of what is still possible: the 
 - If I say no, we are done.
 - If I name apps or tiers, treat that as a new Phase 4 approval for only those items. Before applying them, save df_before_roundN.txt, meminfo_before_roundN.txt, uptime_before_roundN.txt and packages_before_roundN.txt (N = 2, 3, ...), so this round's own change can be measured. Apply them with Phase 5 (rollback lines first, newest first, no questions until the end of the pass), then do one restart and the Phase 6 checks. Then update the report with new "after" numbers (Phase 7): one table for this round, and one for the totals since the first "before". Then ask this question again.
 - I may name apps by the name shown on the phone, which often differs from the package name. Tested on realme UI 7: "Tile Explorer" was com.oakever.tiletrip, "Collect Ball" was com.katanlabs.matchballgame, "Worm family" was com.katanlabs.worm.ioeatemall. Show me a table of name → package before acting. Ask me if any match is uncertain, or if two installed packages could match.
+- No allowed command shows an app's display name, so some names cannot be matched directly. Preinstalled shell apps often have random-looking package names. Tested on OriginOS 6: "Axe Ace" and "EVO" were com.kncbetru.weryu and com.lgzddt.sk.yfv.opcyzl.bitjiz. Then: (1) list the downloaded-type apps that are still installed and that you cannot name; (2) for each, run adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER <package> (a main screen like ".aa" or "com.webview.MainActivity" points to an obfuscated or web-wrapper app); (3) show me the candidates, say that the match is by elimination, and tell me how to check it myself: Settings > Apps > <app> > App details opens its Play Store page, whose address contains the package name. Remove them only after I confirm.
+- If I name an app that was already removed this session, check removal_log.csv and "adb shell pm list packages <package>", and tell me it is already gone instead of removing anything. Tested: I named "Feedback" after com.vivo.feedback was already uninstalled.
 - If a name matches no installed package, say so and do not guess. On realme and OPPO, "Hot Apps" and "Hot Games" are usually home-screen folders of sponsored shortcuts, not installed apps: tell me to delete the folder or turn off its recommendations on the home screen.
 - If I name an app that is not on any list, check it against UAD-ng and the HARD DENYLIST first, and tell me what it is and what I would lose before doing anything.
 
