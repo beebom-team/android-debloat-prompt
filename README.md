@@ -35,7 +35,9 @@ At the end, the AI gives you a **before/after report** with measured numbers:
 
 It is designed to be as safe as possible, but no tool can promise it works on every phone. Read this before you start.
 
-- **Nothing is deleted from the phone's system.** Apps are removed only for your user profile (`pm uninstall --user 0`). The app's installation file stays on the phone, so it can be restored with one command or by a factory reset. The removed apps' own data and cache are deleted; that's what frees storage.
+- **Nothing is deleted from the phone's system.** Apps are removed only for your user profile (`pm uninstall --user 0`). For apps that are part of the system, the installation file stays on the phone, so they can be restored with one command or by a factory reset. The removed apps' own data and cache are deleted; that's what frees storage.
+- **Some preinstalled apps are really "downloaded" apps** (for example partner games, Mi Store or WPS Office on Xiaomi). These are deleted completely, and the undo file can't bring them back; you reinstall them from the Play Store. The AI marks them with † in the list so you know before you approve.
+- **Apps you probably use are never in a "remove all" choice.** UAD-ng rates apps like WhatsApp, Instagram, Google Pay and Gmail as removable. The AI puts them in a separate "Probably yours" list and removes one only if you name it.
 - **You approve every removal.** The AI stops and shows you a table first.
 - **An undo file is written first.** Before each removal, the AI adds the restore command to `rollback.bat` (Windows) and `rollback.sh` (Mac/Linux).
 - **Important apps are protected.** The AI is told never to touch your dialer, SMS app, keyboard, home screen, Play Store, Google Play services, camera, emergency alerts, security, or system update components.
@@ -165,6 +167,8 @@ When everything works, the AI measures the phone again (no extra restart) and gi
 
 Storage freed is often smaller than people expect. Preinstalled apps live on a read-only part of the phone, so only their updates, data and cache can be freed. The report explains this.
 
+Finally, the AI asks **"Do you want to remove any more apps?"** and shows what's still possible (the tiers you skipped, and the "Probably yours" list). Name what you want removed, and it does another careful round with its own undo lines, one restart and the same checks. Or say no, and you're done.
+
 ---
 
 ## How to undo
@@ -203,7 +207,7 @@ If an app store was muted, or an app's pop-ups were blocked, the exact restore l
 | `meminfo_before.txt` / `meminfo_after.txt` | RAM readings, including how much each app was using |
 | `uptime_before.txt` / `uptime_after.txt` | How long the phone had been on at each reading |
 | `df_before.txt` / `df_after.txt` | Storage readings |
-| `diskstats_before.txt` | Size of each app before removal |
+| `diskstats_before.txt` | Size of each app before removal (some phones, such as HyperOS 3, only record totals here) |
 | `battery_before.txt` | Battery level and temperature |
 
 Keep the folder. Your undo files are in it.
@@ -214,11 +218,13 @@ Keep the folder. Your undo files are in it.
 
 | Problem | Fix |
 |---|---|
-| `adb` is not recognized | Reopen the terminal after installing, or run commands from inside the platform-tools folder |
+| `adb` is not recognized | Reopen the terminal after installing, or run commands from inside the platform-tools folder. If you unzipped it to `C:\platform-tools`, an AI that runs commands finds it there and uses the full path |
 | `adb devices` shows nothing | Use a different cable (many cables are charge-only), choose **File transfer** mode, toggle USB debugging off and on, then run `adb kill-server` |
 | `unauthorized` | Unlock the phone and tap **Allow** on the prompt. No prompt? Turn on **Developer options → Revoke USB debugging authorizations**, then reconnect |
 | `Failure [DELETE_FAILED_USER_RESTRICTED]` on Xiaomi | Turn on **USB debugging (Security settings)** in Developer options |
 | `Failure [not installed for 0]` | The app is already removed. Nothing to do |
+| `Failure [-1000]` on Xiaomi HyperOS | HyperOS protects some of Xiaomi's own apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder). The app stays as it was. Nothing broke |
+| An app store still sends notifications after it was muted | On Android 13 and newer, the phone can undo the notification block right away. Turn it off by hand: **Settings → Apps → (the store) → Notifications** |
 | An app came back after a system update | Normal. Run the process again after big updates |
 | The phone is stuck on the logo after a restart | If `adb devices` still shows it, run the undo file. Otherwise, factory reset from recovery mode |
 
@@ -239,7 +245,7 @@ Some stores are needed by the phone. Samsung Pay needs Galaxy Store, and on phon
 No root is needed, and it doesn't unlock the bootloader. It uses only standard ADB commands.
 
 **Is it reversible?**
-Yes. Apps are removed for your user profile only, and the undo files restore them.
+Mostly. System apps are removed for your user profile only, and the undo files restore them. Apps marked † in the list (preinstalled "downloaded" apps such as partner games) are deleted completely; you reinstall those from the Play Store if you want them back.
 
 **Which phones does it work on?**
 Android 5 and newer from any brand. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
