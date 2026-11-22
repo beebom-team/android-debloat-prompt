@@ -26,11 +26,13 @@ At the end, the AI gives you a **before/after report** with measured numbers. Th
 | REDMI Note 17 (HyperOS 3, Android 16) | 434 → 358 (−76) | 18.94 → 17.36 GiB (−1.57 GiB) | 468 MiB → 0 |
 | realme P4R (realme UI 7, Android 16) | 446 → 386 (−60) | 15.96 → 15.66 GiB (−0.30 GiB) | 103 MiB → 0 |
 | vivo T5 (OriginOS 6, Android 16) | 398 → 323 (−75)¹ | 17.58 → 12.94 GiB (−4.64 GiB)² | 370 MiB → 0 |
-| moto edge 70 fusion (Android 17) | 450 → 450 (0)³ | 7.15 → 7.17 GiB (+0.02 GiB) | 246 MiB → 0 |
+| moto edge 70 fusion (Android 17) | 462 → 457 (−5), plus 48 disabled³ | 13.08 → 11.11 GiB (−1.97 GiB)⁴ | 420 MiB → 0⁵ |
 
 ¹ Includes 7 apps the owner named in addition to Recommended.
 ² Larger because 29 preinstalled "downloaded" apps († in the list) were deleted completely, APK and all.
-³ This Android 17 build refused every uninstall without root, so 47 apps were disabled instead. They can't run, but their files stay, so no storage was freed.
+³ This Android 17 build refused every uninstall of a preinstalled app without root, so 48 of them were disabled instead (Glance, ad and promo apps, trackers, Indus Appstore and its home-screen widget). Disabled apps can't run, but they still count as installed. The 5 apps that were uninstalled are partner apps that finishing phone setup had installed: LinkedIn, Amazon Music, FIFA Heroes, Adobe Scan and Fitbit.
+⁴ Measured after phone setup was finished. Only the 5 uninstalled partner apps freed storage. Disabling frees none: in an earlier run on the same phone that only disabled apps, storage used went from 7.15 to 7.17 GiB.
+⁵ Over two runs: 246 MiB from the 47 apps disabled in the first run, and 174 MiB in the second (Indus Appstore and Fitbit). On this phone, Glance switches itself back on at every restart, so turn it off in Settings as well.
 
 Your numbers will differ. They come from your phone.
 
