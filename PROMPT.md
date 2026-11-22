@@ -21,6 +21,11 @@ HOW WE WORK
 - If you cannot run commands, give me ONE command at a time in a code block, wait for me to paste the output, then continue.
 - First detect my computer's operating system and use commands that work in its shell. On Windows, do not rely on grep, sed, awk, wc or Unix pipes: run plain adb commands and do any counting or filtering yourself or with PowerShell.
 - On Windows, Python is often missing even when "python" seems to exist (it can be only a Microsoft Store shortcut that prints "Python was not found"). If so, use PowerShell for every script. Windows PowerShell 5.1's ConvertFrom-Json cannot load the UAD-ng list, because some keys differ only by letter case. Load it with .NET instead: Add-Type -AssemblyName System.Web.Extensions, then a System.Web.Script.Serialization.JavaScriptSerializer with MaxJsonLength set to [int]::MaxValue.
+- Windows PowerShell 5.1 pitfalls (tested):
+  - pm prints some failures on stderr, so capture both streams, for example: cmd /c "adb shell pm uninstall --user 0 <package> 2>&1". Otherwise a failure can look like an empty result.
+  - An array passed to a script with "powershell -File" arrives as one item. Pass a comma-separated string and split it inside the script.
+  - In a double-quoted string, "$p:" is read as a drive variable and fails. Write $p + ':' instead.
+  - Numbers are formatted with the PC's region settings: an Indian-English PC prints 105798 as 1,05,798. Format report numbers with the invariant culture, for example $n.ToString('N0', [Globalization.CultureInfo]::InvariantCulture).
 - Privacy: "pm list users" shows the phone owner's name, and "adb devices" shows the phone's serial number. Do not repeat either in the chat, in report.md or in any file you share.
 - Use only the commands in the ALLOWED COMMANDS section at the end. Never use root, never flash anything, never touch the bootloader, never run pm clear, rm, settings put, adb install, or any pm uninstall without --user 0.
 - Never guess. If you are not sure what a package does, call it "unknown" and keep it.
@@ -33,8 +38,8 @@ HOW WE WORK
 PHASE 0: PREFLIGHT (read-only)
 =====================================================================
 1. Run: adb version
-   If adb is missing, tell me to install Google's official "SDK Platform-Tools" from https://developer.android.com/tools/releases/platform-tools and stop. Do not suggest downloads from any other site.
-   If I say I installed it but "adb" is still not recognized, it is usually unzipped but not on the PATH. Before asking me again, check the usual places (read-only): C:\platform-tools\adb.exe, %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe, %LOCALAPPDATA%\Microsoft\WinGet\Links\adb.exe, and platform-tools inside my Downloads and Desktop folders (on macOS/Linux: ~/platform-tools, ~/Downloads/platform-tools, ~/Library/Android/sdk/platform-tools). If you find it, use that full path for every command in this session. In rollback.bat, start with "set ADB=adb", then 'if exist "<full path>" set ADB="<full path>"', and write every command as %ADB% shell ..., so the undo file works even when adb is not on the PATH.
+   If "adb" is not recognized, it is often already unzipped but not on the PATH. Before telling me to install anything, check the usual places (read-only): C:\platform-tools\adb.exe, %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe, %LOCALAPPDATA%\Microsoft\WinGet\Links\adb.exe, and platform-tools inside my Downloads and Desktop folders (on macOS/Linux: ~/platform-tools, ~/Downloads/platform-tools, ~/Library/Android/sdk/platform-tools). If you find it, use that full path for every command in this session. In rollback.bat, start with "set ADB=adb", then 'if exist "<full path>" set ADB="<full path>"', and write every command as %ADB% shell ..., so the undo file works even when adb is not on the PATH. (Tested: adb was not on the PATH but was found at C:\platform-tools\adb.exe.)
+   Only if adb is not in any of those places, tell me to install Google's official "SDK Platform-Tools" from https://developer.android.com/tools/releases/platform-tools and stop. Do not suggest downloads from any other site.
 2. Run: adb devices -l
    I need exactly one device with the status "device".
    - "unauthorized": tell me to unlock the phone and tap Allow on the USB debugging prompt (tick "Always allow from this computer"), then run it again.
@@ -56,11 +61,16 @@ Run each of these. An empty result is normal and only means "not this skin":
   adb shell getprop ro.miui.ui.version.name         (Xiaomi MIUI)
   adb shell getprop ro.mi.os.version.name           (Xiaomi HyperOS)
   adb shell getprop ro.build.version.opporom        (OPPO ColorOS / realme UI / newer OnePlus OxygenOS)
+  adb shell getprop ro.build.version.realmeui       (realme UI; on realme UI 7 the opporom property is empty)
+  adb shell getprop ro.build.version.oplusrom.display  (ColorOS base version on OPPO / realme / OnePlus)
+  adb shell getprop ro.vendor.oplus.market.name     (OPPO / realme / OnePlus marketing name, for example "realme P4R 5G")
+  adb shell getprop ro.product.marketname           (marketing name on some other brands)
   adb shell getprop ro.vivo.os.version              (vivo Funtouch / OriginOS)
   adb shell getprop ro.build.version.emui           (Huawei EMUI)
   adb shell getprop ro.build.version.magic          (Honor MagicOS)
   adb shell getprop ro.oxygen.version               (older OnePlus OxygenOS)
   adb shell getprop gsm.sim.operator.alpha          (mobile carrier)
+  adb shell getprop gsm.operator.alpha              (carrier fallback; if both are empty or only ",", write "carrier: not reported")
   adb shell pm list users
   adb shell dumpsys device_policy
 
@@ -81,7 +91,7 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
      adb shell pm list packages -d      ->  packages_before_disabled.txt
    Count the lines in each file and write the counts down. These are the "apps before" numbers.
    (If you cannot write files, tell me to save each output myself, and write the counts in the chat.)
-   From packages_before_all.txt (it shows each package's file path), mark every package that is in packages_before_downloaded.txt as "downloaded-type". This includes preinstalled apps whose path starts with /data/app, /product/data-app or /cust/app (for example partner games and Xiaomi's Notes, Calendar or Weather on some phones). On a phone with one user, "pm uninstall --user 0" deletes a downloaded-type app completely. "install-existing" cannot bring it back, only the Play Store or a factory reset can. Tested on HyperOS 3 / Android 16: 18 downloaded-type apps were removed, and packages_all went from 434 to 416.
+   From packages_before_all.txt (it shows each package's file path), mark every package that is in packages_before_downloaded.txt as "downloaded-type". This includes preinstalled apps whose path starts with /data/app, /product/data-app, /cust/app, /my_preload or /my_stock (for example partner games, Xiaomi's Notes, Calendar or Weather on some phones, and OPPO / realme apps in /my_stock/del-app or /my_preload/del-app). On a phone with one user, "pm uninstall --user 0" deletes a downloaded-type app completely. "install-existing" cannot bring it back, only the Play Store or a factory reset can. Tested on HyperOS 3 / Android 16: 18 downloaded-type apps were removed, and packages_all went from 434 to 416. Tested on realme UI 7 / Android 16: apps in /my_stock/del-app and /my_preload/del-app (Backup & Restore, realme Community, preinstalled games) were deleted completely too, and packages_all went from 446 to 426 over two rounds.
 
 2. Find the apps that currently fill an essential role. These are PROTECTED and must never be removed or restricted:
      Home screen:   adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
@@ -98,6 +108,7 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
 3. Storage details, captured now because removed apps disappear from these outputs later:
      adb shell dumpsys diskstats   ->  diskstats_before.txt
      adb shell df /data            ->  df_before.txt
+   On some phones df shows /data under another "Mounted on" path (tested on realme UI 7: /storage/emulated/0/Android/obb), and the dm-number changes after a restart. If the 1K-blocks total is the same, it is still the /data filesystem: compare its Used and Available numbers.
 
 4. RAM "before" measurement. Do NOT restart the phone for this.
    a. adb shell uptime            ->  uptime_before.txt   (how long the phone has been on)
@@ -125,7 +136,7 @@ Search every installed package for the items below, on EVERY brand, including Sa
 
 A1. Glance and lock-screen feeds. Match a package if ANY of these is true:
    - Any part of its name contains "glance". EXCEPT: com.lge.faceglance.trustagent (face unlock) and com.samsung.android.service.pentastic (S Pen gestures), which are not Glance.
-   - Its name starts with com.glance. or com.inmobi. (InMobi owns Glance).
+   - Its name starts with com.glance. or com.inmobi. (InMobi owns Glance), or com.taboola. (Taboola lock-screen news).
    - Any part of its name contains "pictorial", "fashiongallery", "magazine" or "magazineservice". EXCEPT: com.google.android.apps.magazines (Google News) and com.oplus.keyguard.clock.magazine (OPPO lock-screen clock styles), which are not feeds.
    - Its UAD-ng description mentions Glance, lock screen stories, lock screen magazine, wallpaper carousel or trending stories.
    - It is one of these known packages:
@@ -140,6 +151,7 @@ A1. Glance and lock-screen feeds. Match a package if ANY of these is true:
        com.huawei.magazine                     Huawei Magazine unlock
        com.hihonor.magazine                    Honor Magazine unlock
        com.taboola.mip                         Taboola lock-screen stories feed
+       com.taboola.scoop                       Taboola lock-screen news panel (realme; UAD-ng Recommended)
        com.inmobi.installer                    InMobi app installer
    - Motorola and Nothing (and CMF): any package matching the rules above is Glance and goes into A1. The A1 rules apply even when the name also matches the denylist word "lockscreen".
    Action for A1: uninstall for user 0.
@@ -161,11 +173,12 @@ A3. "Display over other apps" pop-ups. Run:
 
 A4. Preinstalled app stores that are not Google Play. Never touch com.android.vending (Google Play Store).
    Find installed stores by package name or UAD-ng description, for example:
-     com.xiaomi.mipicks / com.xiaomi.market (GetApps), com.mi.global.shop (Mi Store), com.sec.android.app.samsungapps (Galaxy Store), com.heytap.market / com.oppo.market (OPPO / realme / OnePlus App Market), com.bbk.appstore (vivo App Store), com.huawei.appmarket (AppGallery), com.hihonor.appmarket (Honor App Market), com.transsnet.store (Palm Store), net.bat.store (AHA Games), com.lenovo.leos.appstore, and any other preinstalled store, including Indus Appstore, that you can identify. Mark identifications without UAD-ng data "AI knowledge, unverified".
+     com.xiaomi.mipicks / com.xiaomi.market (GetApps), com.mi.global.shop (Mi Store), com.sec.android.app.samsungapps (Galaxy Store), com.heytap.market / com.oppo.market (OPPO / realme / OnePlus App Market), com.nearme.gamecenter (OPPO / realme Game Center, a games store), com.bbk.appstore (vivo App Store), com.huawei.appmarket (AppGallery), com.hihonor.appmarket (Honor App Market), com.transsnet.store (Palm Store), net.bat.store (AHA Games), com.lenovo.leos.appstore, and any other preinstalled store, including Indus Appstore, that you can identify. Mark identifications without UAD-ng data "AI knowledge, unverified".
    Decide the action for each store:
    - If com.android.vending is NOT installed (for example a Huawei phone without Google), NEVER uninstall any store, because it may be the only way to install apps. Use "Mute".
    - If the store is rated Recommended by UAD-ng and Play Store is installed: uninstall for user 0.
    - If it is rated Advanced, Expert or Unsafe, or you are unsure (for example Galaxy Store, which Samsung Pay and Samsung app updates need): use "Mute".
+   - If the uninstall of an A4 store is refused in Phase 5 (for example "Failure [DELETE_FAILED_INTERNAL_ERROR]" or "Failure [-1000]"), Mute it in the same pass. This is the one allowed fallback, because muting is what stops the store's nags. Add its mute rollback lines first, as usual. Tested on realme UI 7 / Android 16: com.heytap.market and com.nearme.gamecenter both refused to uninstall.
    "Mute" = turn off its notifications and background activity, without uninstalling:
      For each of these app-ops: POST_NOTIFICATION (Android 13+ only), RUN_ANY_IN_BACKGROUND, RUN_IN_BACKGROUND
        first record the current mode: adb shell cmd appops get <package> <op>
@@ -214,22 +227,31 @@ Never uninstall, disable or restrict these, even if a list says they are safe:
   Exceptions: A1 Glance and lock-screen feed matches override this word rule (but not the Unsafe rating or PROTECTED apps). In Group B, if a package matches but you are certain it is only an ad, app store or theme-store app, you may list it as Expert with a clear explanation.
 
 DEPENDENCIES: for every candidate, check its "neededBy" field. If any package in neededBy is installed and NOT also being removed, keep the candidate and tell me why.
+Also check the other direction, because UAD-ng often records a link in only one field: if an installed package that stays lists a candidate in its own "dependencies" field, keep the candidate and tell me why. Tested on realme UI 7: com.oplus.mediacontroller (kept) lists com.oplus.statistics.rom and com.coloros.scenemode as dependencies, and com.heytap.cloud, com.heytap.market and com.heytap.accessory all list com.heytap.mcs.
 
 =====================================================================
 PHASE 4: REVIEW. STOP AND WAIT FOR MY APPROVAL.
 =====================================================================
+HOW TO SHOW THE LIST: I am not a developer. I read this in a chat window, often on a laptop or a phone, where wide tables get cut off and package names look scary.
+- In the chat, do NOT use tables with more than 3 columns, and do NOT lead with package names.
+- Show each app on ONE short line (about 20 words at most), in this form:
+    R1  vivo Browser: shows ads and tracks you. You lose: nothing, Chrome is your browser.
+  Start with the app's everyday name: from the UAD-ng description, from your knowledge, or, if neither, the last part of the package name. Then give a few plain words about what it does and what I lose. Add the action only when it is not "uninstall" (for example "[mute]", "[disable]"). Add "†" for downloaded-type apps, "partner preload" where that applies, and "(AI)" when the rating comes from AI knowledge instead of UAD-ng.
+- Inside each group or tier, put the apps under small plain-word headings, for example "Ads and promos", "Lock-screen feeds", "Tracking and logs", "Games and partner apps", "Phone-maker extras you may use". Then I can approve a whole heading at once ("go + Recommended, Tracking and logs").
+- Write the full details to review.md in the current folder as a table: number, app name, package name, what it is, sub-group, action, rating source, what I lose. Tell me the file name in one line. If you cannot write files, list the package names once, compactly, at the very end of the review under "Package names (for reference)".
+
 Show:
-1. Group A as one table, with columns:
-     # | Package | What it is (plain English) | Sub-group (A1 Glance / A2 Ads / A3 Pop-ups / A4 Store) | Action (uninstall / restrict / mute) | Rating source (UAD-ng or AI knowledge) | What I lose
-   Group A is PRE-SELECTED: it will be applied unless I exclude items.
-2. Group B as one table per tier (Recommended, Advanced, Expert), with the same columns plus "Tier". Group B is NOT pre-selected.
+1. Group A in that format. Group A is PRE-SELECTED: it will be applied unless I exclude items.
+2. Group B in that format, one section per tier (Recommended, Advanced, Expert). Group B is NOT pre-selected.
    Number the items per tier (R1, R2 ... for Recommended, V1 ... for Advanced, E1 ... for Expert) so I can name them in my reply.
-   Mark every downloaded-type package (Phase 2) with a "†" and say in "What I lose": "The undo file cannot restore it. Reinstall it from the Play Store."
+   Mark every downloaded-type package (Phase 2) with a "†". Explain "†" once, above the lists: "The undo file cannot restore it. Reinstall it from the Play Store." In review.md, write this in its "What I lose" column.
    On Xiaomi HyperOS, mark Xiaomi's own user-facing apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder) as "HyperOS may refuse this (Failure [-1000])". Tested on HyperOS 3: all seven were refused.
+   On OPPO / realme / OnePlus, mark com.heytap.market, com.nearme.gamecenter, com.nearme.instant.platform and com.oplus.olc as "may refuse this (Failure [DELETE_FAILED_INTERNAL_ERROR])". Tested on realme UI 7 / Android 16: all four were refused.
 3. If no Glance or lock-screen feed was found, say so clearly, and list the package names you checked for.
 4. The PROTECTED apps from Phase 2, so I know they will be kept.
-5. The "Probably yours: not suggested" list and the "left out for safety" list from Phase 3, as short lists of names.
+5. The "Probably yours: not suggested" list and the "left out for safety" list from Phase 3, as short comma-separated lists of everyday app names (package names only in review.md).
 6. The count of packages per group and tier.
+7. Finally, a two-line summary in plain words, for example: "Group A removes the lock-screen stories and 6 ad apps. My suggestion: go + all Recommended (40 apps, none you are likely to use)."
 
 Then STOP. Do not change anything until I reply. Examples of replies I might give:
   "go"                                  = apply Group A only
@@ -270,9 +292,10 @@ For EACH approved package, in this exact order:
    On any other result, log it as failed, do not try another method, and move on.
    Known results that are not dangerous, so log them and keep going:
      - "Failure [-1000]" on Xiaomi HyperOS: the system protects that app from uninstalling. It stays installed and unchanged.
+     - "Failure [DELETE_FAILED_INTERNAL_ERROR]" on OPPO / realme / OnePlus: the system protects that app from uninstalling. It stays installed and unchanged (check with adb shell pm list packages <package>). For an A4 store, Mute it instead (see A4).
      - "Failure [not installed for 0]": the app was already removed.
-     - POST_NOTIFICATION reads back as "allow" on Android 13+, or SYSTEM_ALERT_WINDOW reads back as "default" instead of "ignore": the system overrode the change. Log it as failed and, at the end, give me the manual Settings steps (or offer to uninstall the app instead, if it is in Group B).
-   Any other failure is unexpected: stop and explain before the next package.
+     - POST_NOTIFICATION reads back as "allow" on Android 13+, or SYSTEM_ALERT_WINDOW reads back as "default" or "allow" instead of "ignore": the system overrode the change (tested on realme UI 7: com.oplus.themestore read back "allow"). Log it as failed and, at the end, give me the manual Settings steps (or offer to uninstall the app instead, if it is in Group B).
+   Any other failure is unexpected: stop and explain before the next package. When I say to continue, resume from the next package. Do not redo packages that are already done.
 4. Add a line to removal_log.csv.
 
 Order: Group A first, then Group B Recommended, then Advanced, then Expert, all in one pass. Do NOT restart the phone between groups. Keep going until every approved change is done, then go to Phase 6.
@@ -296,7 +319,7 @@ If something broke (this is the only case where another restart is allowed):
 PHASE 7: "AFTER" MEASUREMENTS AND FINAL REPORT
 =====================================================================
 Do NOT restart again. Use the restart from Phase 6:
-1. Wait until the phone has been on for at least 3 minutes since that restart (adb shell sleep 180 if needed).
+1. Wait until the phone has been on for at least 3 minutes since that restart. Read the seconds with adb shell cat /proc/uptime (the first number). If it is under 180, run adb shell sleep <180 minus that number>.
 2. Save:
      adb shell uptime                  ->  uptime_after.txt
      adb shell dumpsys meminfo         ->  meminfo_after.txt
@@ -306,6 +329,7 @@ Do NOT restart again. Use the restart from Phase 6:
      adb shell pm list packages -3     ->  packages_after_downloaded.txt
      adb shell pm list packages -d     ->  packages_after_disabled.txt
      adb shell pm list packages -f -u  ->  packages_after_all.txt
+3. Compare packages_before.txt with packages_after.txt. Every package that disappeared must be in removal_log.csv with the result "Success". Name any package that disappeared without being in the log (for example an app I uninstalled on the phone myself during the session), and do not count it as removed by you. Tested on realme UI 7: one game disappeared that no command had removed.
 
 Then write the final report in the chat AND save it as report.md. It MUST contain this table, filled only with measured numbers:
 
@@ -325,7 +349,7 @@ Then write the final report in the chat AND save it as report.md. It MUST contai
 Also report:
 - Storage freed, two ways:
   a. Measured: the change in "Used" on /data between df_before.txt and df_after.txt.
-  b. Estimated: the sum of App Size + Data Size + Cache Size for the removed packages, from diskstats_before.txt. If diskstats does not list a package, say so. On some phones (tested: HyperOS 3 / Android 16), diskstats has no "Package Names", "App Sizes", "App Data Sizes" or "Cache Sizes" lines at all, only partition totals. Then write "not measured: diskstats on this phone has no per-app sizes".
+  b. Estimated: the sum of App Size + Data Size + Cache Size for the removed packages, from diskstats_before.txt. If diskstats does not list a package, say so. On some phones (tested: HyperOS 3 / Android 16 and realme UI 7 / Android 16), diskstats has no "Package Names", "App Sizes", "App Data Sizes" or "Cache Sizes" lines at all, only partition totals. Then write "not measured: diskstats on this phone has no per-app sizes".
   Explain that preinstalled apps live on the read-only system partition, so their installation files stay on the phone. Only their updates, data and cache on /data are freed, so the storage freed can be small. That is expected.
 - RAM freed, two ways:
   a. Main number: the RAM the removed and disabled apps were using. Add up the PSS of the processes in meminfo_before.txt that belong to them (a process belongs to a package if its name equals the package name or starts with "<package>:"). After removal, these processes cannot run, so this RAM is freed.
@@ -353,7 +377,9 @@ After the report, always end by asking me:
   "Do you want to remove any more apps?"
 Next to the question, show a short numbered list of what is still possible: the Group B items I did not approve (by tier), the "Probably yours: not suggested" list, and any Group B apps that failed but could be disabled instead. Do not ask for anything or change anything else.
 - If I say no, we are done.
-- If I name apps or tiers, treat that as a new Phase 4 approval for only those items. Apply them with Phase 5 (rollback lines first, newest first), then do one restart and the Phase 6 checks, then update the report with new "after" numbers (Phase 7). Then ask this question again.
+- If I name apps or tiers, treat that as a new Phase 4 approval for only those items. Before applying them, save df_before_roundN.txt, meminfo_before_roundN.txt, uptime_before_roundN.txt and packages_before_roundN.txt (N = 2, 3, ...), so this round's own change can be measured. Apply them with Phase 5 (rollback lines first, newest first), then do one restart and the Phase 6 checks. Then update the report with new "after" numbers (Phase 7): one table for this round, and one for the totals since the first "before". Then ask this question again.
+- I may name apps by the name shown on the phone, which often differs from the package name. Tested on realme UI 7: "Tile Explorer" was com.oakever.tiletrip, "Collect Ball" was com.katanlabs.matchballgame, "Worm family" was com.katanlabs.worm.ioeatemall. Show me a table of name → package before acting. Ask me if any match is uncertain, or if two installed packages could match.
+- If a name matches no installed package, say so and do not guess. On realme and OPPO, "Hot Apps" and "Hot Games" are usually home-screen folders of sponsored shortcuts, not installed apps: tell me to delete the folder or turn off its recommendations on the home screen.
 - If I name an app that is not on any list, check it against UAD-ng and the HARD DENYLIST first, and tell me what it is and what I would lose before doing anything.
 
 =====================================================================
@@ -377,7 +403,8 @@ Read-only:
   adb shell cmd appops get <package> <op>
   adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
   adb shell sleep <seconds>
-  adb shell uptime
+  adb shell uptime | adb shell cat /proc/uptime
+  adb shell pm list packages <package>   (check whether one package is still installed)
 Changes (Phase 5 only, after my approval):
   adb shell pm uninstall --user 0 <package>
   adb shell pm disable-user --user 0 <package>

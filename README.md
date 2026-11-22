@@ -138,6 +138,8 @@ Reply with exactly what to apply, for example:
 - `go + all Recommended`
 - `go + Recommended except 4 and 9`
 
+You can also approve a whole heading, for example `go + Recommended, Tracking and logs`. Each app is shown as one short line with its everyday name and what you'd lose. The technical package names are saved in `review.md` if you want to look them up.
+
 The AI will not change anything you didn't approve.
 
 ### Step 6: Test after the restart
@@ -201,13 +203,14 @@ If an app store was muted, or an app's pop-ups were blocked, the exact restore l
 | File | What it is |
 |---|---|
 | `report.md` | The final before/after report |
+| `review.md` | The full list the AI suggested, with technical package names |
 | `packages_before*.txt` / `packages_after*.txt` | App lists before and after (all, preinstalled, downloaded, disabled) |
 | `rollback.bat` / `rollback.sh` | Undo commands for every change |
 | `removal_log.csv` | What was changed, when, and whether it worked |
 | `meminfo_before.txt` / `meminfo_after.txt` | RAM readings, including how much each app was using |
 | `uptime_before.txt` / `uptime_after.txt` | How long the phone had been on at each reading |
 | `df_before.txt` / `df_after.txt` | Storage readings |
-| `diskstats_before.txt` | Size of each app before removal (some phones, such as HyperOS 3, only record totals here) |
+| `diskstats_before.txt` | Size of each app before removal (some phones, such as HyperOS 3 and realme UI 7, only record totals here) |
 | `battery_before.txt` | Battery level and temperature |
 
 Keep the folder. Your undo files are in it.
@@ -224,6 +227,7 @@ Keep the folder. Your undo files are in it.
 | `Failure [DELETE_FAILED_USER_RESTRICTED]` on Xiaomi | Turn on **USB debugging (Security settings)** in Developer options |
 | `Failure [not installed for 0]` | The app is already removed. Nothing to do |
 | `Failure [-1000]` on Xiaomi HyperOS | HyperOS protects some of Xiaomi's own apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder). The app stays as it was. Nothing broke |
+| `Failure [DELETE_FAILED_INTERNAL_ERROR]` on OPPO / realme / OnePlus | The phone protects some of its own apps (for example App Market, Game Center, Instant Games). The app stays as it was. Nothing broke. For an app store, the AI mutes it instead |
 | An app store still sends notifications after it was muted | On Android 13 and newer, the phone can undo the notification block right away. Turn it off by hand: **Settings → Apps → (the store) → Notifications** |
 | An app came back after a system update | Normal. Run the process again after big updates |
 | The phone is stuck on the logo after a restart | If `adb devices` still shows it, run the undo file. Otherwise, factory reset from recovery mode |
