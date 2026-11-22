@@ -360,6 +360,7 @@ PHASE 6: ONE RESTART, THEN VERIFY
 4. Ask me to unlock the phone once.
 5. Ask me to check each of these on the phone and tell you the result:
      unlock (PIN, fingerprint, face) | lock screen shows a normal wallpaper and no stories feed | home screen | make AND receive a call | send AND receive an SMS | mobile data | Wi-Fi | Bluetooth | camera photo and video | a notification from a messaging app | Play Store opens and can update an app | alarms | banking or payment apps open | system update screen opens
+   If a banking or UPI app refuses to open with a message about Developer options, USB debugging or a "rooted / unsafe device", that is the app's own security check reacting to Developer options being on. It is not caused by debloating: do not undo anything for it. Tell me it will open once I turn off Developer options at the very end (see Phase 7), and count the check as passed.
 
 If something broke (this is the only case where another restart is allowed):
 1. Undo the newest group or tier with its rollback commands (Expert first, then Advanced, then Recommended, then Group A).
@@ -429,6 +430,7 @@ Also report:
 - The files created and where they are.
 - How to undo everything: connect the phone, enable USB debugging, open a terminal in this folder, and run .\rollback.bat (Windows PowerShell; in Command Prompt type rollback.bat) or sh rollback.sh (macOS/Linux). List the downloaded-type apps (†) that the undo file cannot bring back, and say that they can be reinstalled from the Play Store.
 - That major system updates can bring some apps back, and this process can be run again afterwards.
+- My last step, once we are completely finished: turn off USB debugging and Developer options (Settings > Developer options > the switch at the top > off). This is safer, and many banking and UPI apps refuse to open while Developer options is on. The undo files still work later: I only need to turn USB debugging on again first.
 No claims beyond what the measurements show.
 
 =====================================================================
@@ -437,7 +439,7 @@ PHASE 8: ASK IF I WANT TO REMOVE MORE APPS
 After the report, always end by asking me:
   "Do you want to remove any more apps?"
 Next to the question, show a short numbered list of what is still possible: the Group B items I did not approve (by tier), the "Probably yours: not suggested" list, and any Group B apps that failed but could be disabled instead. Do not ask for anything or change anything else.
-- If I say no, we are done.
+- If I say no, remind me of my last step (turn off USB debugging and Developer options), and we are done.
 - If I name apps or tiers, treat that as a new Phase 4 approval for only those items. Before applying them, save df_before_roundN.txt, meminfo_before_roundN.txt, uptime_before_roundN.txt and packages_before_roundN.txt (N = 2, 3, ...), so this round's own change can be measured. Apply them with Phase 5 (rollback lines first, newest first, no questions until the end of the pass), then do one restart and the Phase 6 checks. Then update the report with new "after" numbers (Phase 7): one table for this round, and one for the totals since the first "before". Then ask this question again.
 - I may name apps by the name shown on the phone, which often differs from the package name. Tested on realme UI 7: "Tile Explorer" was com.oakever.tiletrip, "Collect Ball" was com.katanlabs.matchballgame, "Worm family" was com.katanlabs.worm.ioeatemall. Show me a table of name → package before acting. Ask me if any match is uncertain, or if two installed packages could match.
 - No allowed command shows an app's display name, so some names cannot be matched directly. Preinstalled shell apps often have random-looking package names. Tested on OriginOS 6: "Axe Ace" and "EVO" were com.kncbetru.weryu and com.lgzddt.sk.yfv.opcyzl.bitjiz. Then: (1) list the downloaded-type apps that are still installed and that you cannot name; (2) for each, run adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER <package> (a main screen like ".aa" or "com.webview.MainActivity" points to an obfuscated or web-wrapper app); (3) show me the candidates, say that the match is by elimination, and tell me how to check it myself: Settings > Apps > <app> > App details opens its Play Store page, whose address contains the package name. Remove them only after I confirm.

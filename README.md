@@ -6,6 +6,13 @@ The AI reads your phone over a USB cable and checks every app against the commun
 
 **➡️ The prompt is in [PROMPT.md](PROMPT.md).**
 
+### Quick start
+1. Back up your phone and charge it above 50% ([Step 1](#step-1-back-up-your-phone)).
+2. Install ADB on your computer ([Step 2](#step-2-install-adb-on-your-computer)).
+3. Turn on USB debugging and connect the phone with a USB cable ([Step 3](#step-3-turn-on-usb-debugging-on-the-phone)).
+4. Paste the prompt into your AI and follow along. You can chat in Hindi or any other language ([Step 4](#step-4-give-the-prompt-to-your-ai)).
+5. Approve the list, test the phone after the restart, then turn off USB debugging ([Steps 5–8](#step-5-review-the-list-carefully)).
+
 ---
 
 ## What it does by default
@@ -162,7 +169,7 @@ When every approved change is done, the AI restarts the phone once. Unlock it, t
 - [ ] Notifications from a messaging app
 - [ ] Play Store opens and updates an app
 - [ ] Alarms
-- [ ] Banking or payment apps open
+- [ ] Banking or payment apps open (if one complains that Developer options is on, that's its own security check, not a problem; it opens again after [Step 8](#step-8-turn-off-usb-debugging))
 - [ ] Settings → System update opens
 
 Tell the AI the result. If something broke, it undoes the newest group first (one extra restart each time) and narrows down which app caused it.
@@ -178,6 +185,9 @@ When everything works, the AI measures the phone again (no extra restart) and gi
 Storage freed is often smaller than people expect. Preinstalled apps live on a read-only part of the phone, so only their updates, data and cache can be freed. The report explains this.
 
 Finally, the AI asks **"Do you want to remove any more apps?"** and shows what's still possible (the tiers you skipped, and the "Probably yours" list). Name what you want removed, and it does another careful round with its own undo lines, one restart and the same checks. Or say no, and you're done.
+
+### Step 8: Turn off USB debugging
+Go to **Settings → Developer options** and turn off the switch at the top. This is safer, and many banking and UPI apps won't open while Developer options is on. Your undo files still work later; just turn USB debugging on again first.
 
 ---
 
@@ -242,6 +252,8 @@ Keep the folder. Your undo files are in it.
 | `Shell cannot change component state for null to 3` | The app was already disabled before you started. Nothing to do |
 | The AI can't find an app by the name shown on the phone | Some preinstalled apps use random-looking package names (on a tested vivo phone, "Axe Ace" and "EVO" were `com.kncbetru.weryu` and `com.lgzddt.sk.yfv.opcyzl.bitjiz`). The AI narrows it down by elimination and asks you to confirm. To check yourself: **Settings → Apps → (the app) → App details** opens its Play Store page, and the address contains the package name |
 | An app store still sends notifications after it was muted | On Android 13 and newer, the phone can undo the notification block right away. Turn it off by hand: **Settings → Apps → (the store) → Notifications** |
+| My bank or UPI app won't open and mentions Developer options, USB debugging or an "unsafe device" | That's the app's own security check, not damage from debloating. Turn off Developer options ([Step 8](#step-8-turn-off-usb-debugging)) and open the app again |
+| The chat AI says the prompt is too long | Download [PROMPT.md](PROMPT.md) (the download button at the top right of the file) and attach the file to the chat instead of pasting it |
 | `rollback.bat` is not recognized in PowerShell | Type `.\rollback.bat` (PowerShell only runs files from the current folder with `.\` in front) |
 | Ads still appear inside the phone's own apps (Security, Themes, File Manager) or in "Hot Apps" folders | These apps must stay, so their ads can only be turned off in Settings. Your report lists the exact switches. Search Settings for "recommendations" if you can't find one |
 | An app came back after a system update | Normal. Run the process again after big updates |
