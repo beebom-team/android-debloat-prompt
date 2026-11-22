@@ -55,7 +55,7 @@ AI USB केबल से आपका फ़ोन पढ़ता है औ�
 
 ![REDMI Note 17 की होम स्क्रीन, debloat के बाद](images/redmi-after.jpg)
 
-हटाए गए: पूरा Games फ़ोल्डर (10 पहले से आए गेम्स), "More apps" फ़ोल्डर (Amazon, WPS Office, Bubble Shooter), Facebook, Instagram, Spotify, LinkedIn, Mi Store, Mi Home, App vault, Game Centre, Music, Cleaner और Services & feedback। Netflix रहा क्योंकि फ़ोन के मालिक ने उसे रखा, और WhatsApp उन्होंने खुद इंस्टॉल किया। Indus Appstore रहा, पर उसे चुप करा दिया गया।
+प्रॉम्प्ट ने हटाए: पहले से आए गेम्स वाला पूरा Games फ़ोल्डर, WPS Office, Bubble Shooter, Mi Store, Mi Home, App vault, Game Centre, Music, Cleaner और Services & feedback। Facebook, Instagram, Spotify, LinkedIn और Amazon बाद में फ़ोन के मालिक ने खुद हटाए; अब प्रॉम्प्ट पहले से आए इन पाँचों को bloatware मानता है। Netflix रहा क्योंकि फ़ोन के मालिक ने उसे रखा, और WhatsApp उन्होंने खुद इंस्टॉल किया। Indus Appstore रहा, पर उसे चुप करा दिया गया।
 
 ---
 
@@ -215,7 +215,7 @@ AI को नतीजा बताएँ। अगर कुछ खराब �
 ### चरण 7: अपनी रिपोर्ट पढ़ें
 सब ठीक चलने पर AI फ़ोन को फिर मापता है (बिना एक और रीस्टार्ट के) और आपको `report.md` देता है, जिसमें होता है:
 - **ऐप्स:** पहले और बाद में कितने इंस्टॉल थे (पहले से आए और डाउनलोड किए अलग-अलग)
-- **खाली हुई स्टोरेज:** फ़ोन पर मापी गई, और हटाए गए ऐप्स के साइज़ से अनुमान
+- **खाली हुई स्टोरेज:** फ़ोन पर मापी गई (हर ऐप का अनुमान सिर्फ़ उन फ़ोन पर जुड़ता है जो ऐप्स का साइज़ रखते हैं; टेस्ट किए गए 6 में से किसी ने नहीं रखा)
 - **खाली हुई RAM:** हटाए गए ऐप्स जितनी RAM इस्तेमाल कर रहे थे, और पूरे फ़ोन का पहले/बाद का बदलाव (इस नोट के साथ कि उसका कुछ हिस्सा रीस्टार्ट की वजह से है)
 - **Glance और हर ऐप स्टोर के साथ क्या हुआ,** और जो सिर्फ़ ब्लॉक हो सका उसे कैसे बंद करें
 - **विज्ञापन के वे स्विच जो आपको खुद बंद करने होंगे:** कुछ विज्ञापन ऐसे ऐप्स से आते हैं जिन्हें रहना ही है, जैसे Xiaomi के Security और Themes ऐप, या realme के "Hot Apps" फ़ोल्डर। रिपोर्ट Settings में सही स्विच बताती है
@@ -266,7 +266,7 @@ adb shell pm enable --user 0 com.example.package
 | `meminfo_before.txt` / `meminfo_after.txt` | RAM की रीडिंग, हर ऐप कितनी इस्तेमाल कर रहा था |
 | `uptime_before.txt` / `uptime_after.txt` | हर रीडिंग के समय फ़ोन कितनी देर से चालू था |
 | `df_before.txt` / `df_after.txt` | स्टोरेज की रीडिंग |
-| `diskstats_before.txt` | हटाने से पहले हर ऐप का साइज़ (कुछ फ़ोन, जैसे HyperOS 3 और realme UI 7, यहाँ सिर्फ़ कुल आँकड़े रखते हैं) |
+| `diskstats_before.txt` | हटाने से पहले की स्टोरेज रीडिंग। कुछ फ़ोन यहाँ हर ऐप का साइज़ भी रखते हैं; टेस्ट किए गए सभी 6 फ़ोन ने सिर्फ़ कुल आँकड़े रखे |
 | `battery_before.txt` | बैटरी लेवल और तापमान |
 
 यह फ़ोल्डर संभालकर रखें। आपकी undo फ़ाइलें इसी में हैं।
@@ -283,9 +283,9 @@ adb shell pm enable --user 0 com.example.package
 | Xiaomi पर `Failure [DELETE_FAILED_USER_RESTRICTED]` | Developer options में **USB debugging (Security settings)** चालू करें |
 | `Failure [not installed for 0]` | ऐप पहले ही हट चुका है। कुछ करने की ज़रूरत नहीं |
 | Xiaomi HyperOS पर `Failure [-1000]` | HyperOS, Xiaomi के कुछ अपने ऐप्स को बचाता है (जैसे ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder)। ऐप जैसा था वैसा रहता है। कुछ खराब नहीं हुआ |
-| OPPO / realme / OnePlus पर `Failure [DELETE_FAILED_INTERNAL_ERROR]` | फ़ोन अपने कुछ ऐप्स को बचाता है (जैसे App Market, Game Center, Instant Games)। कुछ खराब नहीं हुआ। ऐप स्टोर हो तो AI उसे अपने-आप चुप करा देता है। vivo भी `DELETE_FAILED_USER_RESTRICTED` से मना कर सकता है; उसे भी ऐसे ही संभाला जाता है |
+| OPPO / realme / OnePlus पर `Failure [DELETE_FAILED_INTERNAL_ERROR]` | फ़ोन अपने कुछ ऐप्स को बचाता है (जैसे App Market, Game Center, Instant Games)। कुछ खराब नहीं हुआ। ऐप स्टोर हो तो AI उसे अपने-आप चुप करा देता है (ColorOS 17 पर फ़ोन यह भी रोक सकता है; तब AI स्टोर को बंद करने का विकल्प देता है, और टेस्ट किए गए OPPO K14 पर App Market ने वह भी मना किया, इसलिए उसके अपने settings स्विच इस्तेमाल होते हैं)। vivo भी `DELETE_FAILED_USER_RESTRICTED` से मना कर सकता है; उसे भी ऐसे ही संभाला जाता है |
 | vivo / iQOO (OriginOS) पर कई ऐप्स मना हो जाते हैं | एक टेस्ट किए गए OriginOS 6 फ़ोन पर vivo के 15 अपने ऐप्स मना हुए (जैसे V-Appstore, Jovi, vivoCloud)। कुछ खराब नहीं हुआ। AI उन्हें बंद करने का विकल्प देता है |
-| `Failure [only root can delete system app for a particular user]` (Android 17) | Android 17 वाले टेस्ट किए गए Motorola edge 70 fusion और Samsung Galaxy M47 पर हर पहले से आया ऐप ऐसे ही मना हुआ। कुछ खराब नहीं हुआ। AI उन्हें बंद करने का विकल्प देता है। बंद ऐप्स न चल सकते हैं, न विज्ञापन दिखा सकते हैं, न नोटिफ़िकेशन भेज सकते हैं; RAM वापस मिलती है, स्टोरेज नहीं |
+| `Failure [only root can delete system app for a particular user]` (Android 17) | Android 17 वाले टेस्ट किए गए Motorola edge 70 fusion, Samsung Galaxy M47 और OPPO K14 5G पर हर पहले से आया सिस्टम ऐप ऐसे ही मना हुआ; सिर्फ़ पहले से आए पार्टनर ऐप्स († वाले) अनइंस्टॉल हुए। कुछ खराब नहीं हुआ। AI बाकी को बंद करने का विकल्प देता है। बंद ऐप्स न चल सकते हैं, न विज्ञापन दिखा सकते हैं, न नोटिफ़िकेशन भेज सकते हैं; RAM वापस मिलती है, स्टोरेज नहीं |
 | `Failure: package is non-disable` | फ़ोन इस ऐप को हटाने या बंद करने से बचाता है। कुछ खराब नहीं हुआ। अगर यह नोटिफ़िकेशन भेजे, तो उस पर देर तक दबाकर उन्हें बंद करें |
 | `Shell cannot change component state for null to 3` | ऐप शुरू करने से पहले ही बंद था। कुछ करने की ज़रूरत नहीं |
 | फ़ोन पर दिखने वाले नाम से AI ऐप नहीं ढूँढ पा रहा | कुछ पहले से आए ऐप्स के पैकेज नाम अजीब होते हैं। AI बाकी ऐप्स हटाकर अंदाज़ा लगाता है और आपसे पक्का करवाता है। खुद देखने के लिए: **Settings → Apps → (ऐप) → App details** से उसका Play Store पेज खुलता है, जिसके पते में पैकेज नाम होता है |
@@ -326,7 +326,7 @@ Samsung पर Glance का अपना कोई ऐप नहीं है�
 ज़्यादातर हाँ। सिस्टम ऐप्स सिर्फ़ आपकी यूज़र प्रोफ़ाइल से हटते हैं, और undo फ़ाइलें उन्हें वापस लाती हैं। लिस्ट में † वाले ऐप्स (पहले से आए "डाउनलोड किए गए" ऐप्स, जैसे पार्टनर गेम्स) पूरी तरह डिलीट होते हैं; उन्हें Play Store से दोबारा इंस्टॉल करें।
 
 **यह किन फ़ोन पर काम करता है?**
-किसी भी ब्रांड के Android 5 और नए फ़ोन पर। Android 17 पर फ़ोन बिना रूट के पहले से आए ऐप्स अनइंस्टॉल करने से मना कर सकता है (Motorola edge 70 fusion और Samsung Galaxy M47 पर देखा गया), तब ऐप्स बंद किए जाते हैं और स्टोरेज कम या बिल्कुल खाली नहीं होती।
+किसी भी ब्रांड के Android 5 और नए फ़ोन पर। Android 17 पर फ़ोन बिना रूट के पहले से आए सिस्टम ऐप्स अनइंस्टॉल करने से मना कर सकता है (Motorola edge 70 fusion, Samsung Galaxy M47 और OPPO K14 5G पर देखा गया)। ऐसे ऐप्स बंद किए जाते हैं, जिससे RAM खाली होती है, स्टोरेज नहीं; इन फ़ोन पर खाली हुई स्टोरेज (1.8–2.4 GB) पहले से आए पार्टनर ऐप्स और गेम्स हटाने से आई।
 
 ---
 

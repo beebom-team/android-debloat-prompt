@@ -55,7 +55,7 @@ Your numbers will differ. They come from your phone.
 
 ![REDMI Note 17 home screens after debloating: the Games folder, Mi Store, App vault and other preinstalled apps are gone](images/redmi-after.jpg)
 
-Gone: the whole Games folder (10 preinstalled games), the "More apps" folder (Amazon, WPS Office, Bubble Shooter), Facebook, Instagram, Spotify, LinkedIn, Mi Store, Mi Home, App vault, Game Centre, Music, Cleaner and Services & feedback. Netflix stayed because the owner kept it, and WhatsApp was installed by the owner. Indus Appstore stayed but was muted.
+Removed by the prompt: the whole Games folder of preinstalled games, WPS Office, Bubble Shooter, Mi Store, Mi Home, App vault, Game Centre, Music, Cleaner and Services & feedback. Facebook, Instagram, Spotify, LinkedIn and Amazon were removed afterwards by the owner; the prompt now lists all five as bloatware when they come preinstalled. Netflix stayed because the owner kept it, and WhatsApp was installed by the owner. Indus Appstore stayed but was muted.
 
 ---
 
@@ -215,7 +215,7 @@ Tell the AI the result. If something broke, it undoes the newest group first (on
 ### Step 7: Read your report
 When everything works, the AI measures the phone again (no extra restart) and gives you `report.md` with:
 - **Apps:** how many were installed before and after (preinstalled and downloaded counted separately)
-- **Storage freed:** measured on the phone, plus an estimate from the removed apps' sizes
+- **Storage freed:** measured on the phone (an estimate per app is added only on phones that record app sizes; none of the 6 tested phones did)
 - **RAM freed:** the RAM the removed apps were using, plus the whole-phone before/after change (with a note that part of that change comes from the restart)
 - **What happened to Glance and each app store,** and how to turn off anything that could only be blocked
 - **Ad switches you must turn off yourself:** some ads come from apps that have to stay, such as Xiaomi's Security and Themes apps or realme's "Hot Apps" folders. The report gives you the exact switches in Settings
@@ -266,7 +266,7 @@ If an app store was muted, or an app's pop-ups were blocked, the exact restore l
 | `meminfo_before.txt` / `meminfo_after.txt` | RAM readings, including how much each app was using |
 | `uptime_before.txt` / `uptime_after.txt` | How long the phone had been on at each reading |
 | `df_before.txt` / `df_after.txt` | Storage readings |
-| `diskstats_before.txt` | Size of each app before removal (some phones, such as HyperOS 3 and realme UI 7, only record totals here) |
+| `diskstats_before.txt` | Storage readings before removal. Some phones also list each app's size here; all 6 tested phones only recorded totals |
 | `battery_before.txt` | Battery level and temperature |
 
 Keep the folder. Your undo files are in it.
@@ -283,9 +283,9 @@ Keep the folder. Your undo files are in it.
 | `Failure [DELETE_FAILED_USER_RESTRICTED]` on Xiaomi | Turn on **USB debugging (Security settings)** in Developer options |
 | `Failure [not installed for 0]` | The app is already removed. Nothing to do |
 | `Failure [-1000]` on Xiaomi HyperOS | HyperOS protects some of Xiaomi's own apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder). The app stays as it was. Nothing broke |
-| `Failure [DELETE_FAILED_INTERNAL_ERROR]` on OPPO / realme / OnePlus | The phone protects some of its own apps (for example App Market, Game Center, Instant Games). The app stays as it was. Nothing broke. For an app store, the AI automatically mutes it instead. vivo can also refuse with `DELETE_FAILED_USER_RESTRICTED`; it's handled the same way |
+| `Failure [DELETE_FAILED_INTERNAL_ERROR]` on OPPO / realme / OnePlus | The phone protects some of its own apps (for example App Market, Game Center, Instant Games). The app stays as it was. Nothing broke. For an app store, the AI automatically mutes it instead (on ColorOS 17 the phone can block muting too; then the AI offers to disable the store, and on a tested OPPO K14 App Market refused even that, so its own settings switches are used). vivo can also refuse with `DELETE_FAILED_USER_RESTRICTED`; it's handled the same way |
 | Many vivo / iQOO apps are refused (OriginOS) | On a tested OriginOS 6 phone, 15 of vivo's own apps were refused (for example V-Appstore, Jovi, vivoCloud, App Clone, Floating ball, Smart Vision). Nothing broke. The AI offers to disable them instead; the vivo Lock Screen Poster could be disabled this way |
-| `Failure [only root can delete system app for a particular user]` (Android 17) | On a tested Motorola edge 70 fusion and a Samsung Galaxy M47, both with Android 17, every preinstalled app was refused this way. Nothing broke. The AI offers to disable them instead. Disabled apps can't run, show ads or send notifications, so you get the RAM back but not the storage |
+| `Failure [only root can delete system app for a particular user]` (Android 17) | On a tested Motorola edge 70 fusion, Samsung Galaxy M47 and OPPO K14 5G, all with Android 17, every preinstalled system app was refused this way; only preinstalled partner apps (marked †) could be uninstalled. Nothing broke. The AI offers to disable the rest instead. Disabled apps can't run, show ads or send notifications, so you get the RAM back but not the storage |
 | `Failure: package is non-disable` | The phone protects this app from being removed or disabled (tested on Motorola). Nothing broke. If it sends notifications, long-press one and turn them off |
 | `Shell cannot change component state for null to 3` | The app was already disabled before you started. Nothing to do |
 | The AI can't find an app by the name shown on the phone | Some preinstalled apps use random-looking package names (on a tested vivo phone, "Axe Ace" and "EVO" were `com.kncbetru.weryu` and `com.lgzddt.sk.yfv.opcyzl.bitjiz`). The AI narrows it down by elimination and asks you to confirm. To check yourself: **Settings → Apps → (the app) → App details** opens its Play Store page, and the address contains the package name |
@@ -326,7 +326,7 @@ No root is needed, and it doesn't unlock the bootloader. It uses only standard A
 Mostly. System apps are removed for your user profile only, and the undo files restore them. Apps marked † in the list (preinstalled "downloaded" apps such as partner games) are deleted completely; you reinstall those from the Play Store if you want them back.
 
 **Which phones does it work on?**
-Android 5 and newer from any brand. On Android 17, the phone may refuse to uninstall any preinstalled app without root (seen on a Motorola edge 70 fusion and a Samsung Galaxy M47), so apps are disabled instead and little or no storage is freed. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
+Android 5 and newer from any brand. On Android 17, the phone may refuse to uninstall any preinstalled system app without root (seen on a Motorola edge 70 fusion, a Samsung Galaxy M47 and an OPPO K14 5G). Those apps are disabled instead, which frees RAM but not storage; the storage freed on those phones (1.8–2.4 GB) came from uninstalling preinstalled partner apps and games. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
 
 ---
 
