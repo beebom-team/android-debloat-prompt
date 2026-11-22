@@ -1,0 +1,58 @@
+name: Report your phone
+description: Tell us how the debloat prompt worked on your phone.
+title: "[Phone report] <brand and model>"
+labels: ["phone report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying the prompt! Please **don't** include your name, phone number or the phone's serial number.
+  - type: input
+    id: phone
+    attributes:
+      label: Phone brand and model
+      placeholder: e.g. Redmi Note 17, realme P4R, Samsung Galaxy M47
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android version and skin
+      placeholder: e.g. Android 16, HyperOS 3 / One UI 9 / realme UI 7
+    validations:
+      required: true
+  - type: dropdown
+    id: ai
+    attributes:
+      label: Which AI did you use?
+      options:
+        - Claude (Claude Code or desktop app)
+        - Claude.ai (chat)
+        - ChatGPT
+        - Gemini
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: How did it go?
+      options:
+        - Worked fine
+        - Worked, with some apps refused
+        - Something broke (and was undone)
+        - Something broke and is still broken
+        - I couldn't finish
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What went wrong (if anything)?
+      description: Which step, which app, and the exact error message.
+  - type: textarea
+    id: report
+    attributes:
+      label: Before/after table from report.md
+      description: Paste the table from your report.md file.
+      render: markdown
