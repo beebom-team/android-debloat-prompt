@@ -189,14 +189,23 @@ A3. "Display over other apps" pop-ups. Run:
 
 A4. Preinstalled app stores that are not Google Play. Never touch com.android.vending (Google Play Store).
    Find installed stores by package name or UAD-ng description, for example:
-     com.xiaomi.mipicks / com.xiaomi.market (GetApps), com.mi.global.shop (Mi Store), com.sec.android.app.samsungapps (Galaxy Store), com.heytap.market / com.oppo.market (OPPO / realme / OnePlus App Market), com.nearme.gamecenter (OPPO / realme Game Center, a games store), com.bbk.appstore (vivo App Store), com.huawei.appmarket (AppGallery), com.hihonor.appmarket (Honor App Market), com.transsnet.store (Palm Store), net.bat.store (AHA Games), com.lenovo.leos.appstore, and any other preinstalled store, including Indus Appstore (com.indus.appstore, not in UAD-ng; preinstalled on many phones sold in India, tested on Motorola and Xiaomi), that you can identify. Mark identifications without UAD-ng data "AI knowledge, unverified".
+     com.xiaomi.mipicks / com.xiaomi.market (GetApps), com.mi.global.shop (Mi Store), com.sec.android.app.samsungapps (Galaxy Store), com.heytap.market / com.oppo.market (OPPO / realme / OnePlus App Market), com.nearme.gamecenter (OPPO / realme Game Center, a games store), com.bbk.appstore / com.vivo.appstore (vivo V-Appstore), com.huawei.appmarket (AppGallery), com.hihonor.appmarket (Honor App Market), com.transsnet.store (Palm Store), net.bat.store (AHA Games), com.lenovo.leos.appstore, and any other preinstalled store, including Indus Appstore (com.indus.appstore, not in UAD-ng; preinstalled on many phones sold in India, tested on Motorola and Xiaomi), that you can identify. Mark identifications without UAD-ng data "AI knowledge, unverified".
    Decide the action for each store:
    - If com.android.vending is NOT installed (for example a Huawei phone without Google), NEVER uninstall any store, because it may be the only way to install apps. Use "Mute".
    - If the store is rated Recommended by UAD-ng and Play Store is installed: uninstall for user 0.
    - If it is rated Advanced, Expert or Unsafe, or you are unsure (for example Galaxy Store, which Samsung Pay and Samsung app updates need): use "Mute".
    - If the uninstall of an A4 store is refused in Phase 5 for ANY reason (for example "Failure [DELETE_FAILED_INTERNAL_ERROR]", "Failure [DELETE_FAILED_USER_RESTRICTED]" or "Failure [-1000]"), Mute it automatically, right away, in the same pass. Do not ask me: approving Group A already approves this. Add its mute rollback lines first, as usual, and log both the refused uninstall and the mute. Tested on realme UI 7 / Android 16: com.heytap.market and com.nearme.gamecenter both refused to uninstall. Tested on vivo OriginOS: com.vivo.appstore refused with DELETE_FAILED_USER_RESTRICTED.
+   NOTIFICATIONS OFF, ALWAYS: every non-Google store that is still installed at the end of Phase 5 (muted, refused, kept, or disabled) must have its notifications turned off. This covers at least V-Appstore (vivo / iQOO), App Market (OPPO / realme / OnePlus), GetApps (Xiaomi / Redmi / POCO), Galaxy Store (Samsung) and Indus Appstore. Never touch com.android.vending.
    "Mute" = turn off its notifications and background activity, without uninstalling:
-     For each of these app-ops: POST_NOTIFICATION (Android 13+ only), RUN_ANY_IN_BACKGROUND, RUN_IN_BACKGROUND
+     1. Notifications, Android 13 and newer (SDK 33+): revoke the notification permission and lock it, so the store cannot ask again:
+          first record: adb shell dumpsys package <package>   (note whether "android.permission.POST_NOTIFICATIONS: granted=" is true or false)
+          then:         adb shell pm revoke <package> android.permission.POST_NOTIFICATIONS
+                        adb shell pm set-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed
+          check:        adb shell dumpsys package <package> must show "POST_NOTIFICATIONS: granted=false" with USER_FIXED in its flags.
+          rollback lines (only if it was granted=true before): adb shell pm clear-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed
+                                                              adb shell pm grant <package> android.permission.POST_NOTIFICATIONS
+        Tested on a vivo T5 / OriginOS 6 / Android 16 with com.vivo.appstore: granted went from true to false, flags showed USER_SET|USER_FIXED, and the POST_NOTIFICATION app-op became "ignore". This works where "cmd appops set ... POST_NOTIFICATION ignore" alone was undone by the system (see below). If pm revoke fails, log it and give me the manual Settings steps.
+     2. For each of these app-ops: POST_NOTIFICATION (Android 13+ only; after step 1 it normally already reads "ignore"), RUN_ANY_IN_BACKGROUND, RUN_IN_BACKGROUND
        first record the current mode: adb shell cmd appops get <package> <op>
        then:                          adb shell cmd appops set <package> <op> ignore
      If an op is not supported on this phone, say so and skip that op.
@@ -382,6 +391,13 @@ PHASE 6: ONE RESTART, THEN VERIFY
           a dialog says "The shortcut will disappear from the Home screen": tap its "Remove" button (the last node with text "Remove")
           read the screen again and confirm the AppLong / GameLong node is gone. Log it in removal_log.csv (group A, action "remove home tile", result).
         Never long-press or remove anything whose content-desc starts with "Folder:" or is a real app. Tested on an OPPO CPH2869 / ColorOS 17: both tiles ("Apps" and "Games", 8-badge each) were removed this way and did not come back.
+   Switches in a row: the whole row can also be a node with checkable="true" (and usually checked="false"). The real switch is the SMALL checkable node to the right of the title (narrower than about a third of the screen). Read and tap that one, never the row.
+7. vivo / iQOO only: ALWAYS do this when V-Appstore (com.vivo.appstore) is still installed (also when it was muted). V-Appstore puts sponsored "Apps" and "Games" tiles on the home screen (tapping one opens com.vivo.appstore/.desktopfolder.DesktopFolderNewAppActivity, a page of "Get" buttons and "Install 12 apps"). Group A already approves turning them off, so do it yourself while the phone is unlocked, with the same safety rules as step 6 (read the screen first, tap only the named switches, confirm afterwards, fall back to asking me):
+     a. Open V-Appstore's settings: adb shell am start -n com.vivo.appstore/.activity.SettingsActivity
+        If that fails: open V-Appstore from its home-screen icon, go to the "Manage" tab, and tap the gear icon at the top right (it has no label in the screen XML).
+     b. Turn OFF "Create Apps on the home screen" and "Create Games on the home screen" (they are at the bottom; scroll if needed). After each tap, a pop-up says "App recommendations provided by V-Appstore will be unavailable" with "Close" and "Cancel": tap "Close" (that confirms turning it off), then read the screen again and confirm the switch shows checked="false".
+     c. Go home and check every home page for nodes with content-desc exactly "Apps" or "Games" that are NOT folders (a folder's content-desc contains ",Folder,"). Tested on a vivo T5 (V2607) / OriginOS 6 / Android 16: after both switches were off, both tiles were gone from the home screen. If one is still there, ask me to long-press it and remove it.
+     Log both switches in removal_log.csv and the report, and add the same kind of comment line to the rollback files as in step 6.
      Fallback, with no tapping at all: if a title is not found (for example the phone is not in English, or this App Market version differs), the screen is locked, the settings screen did not open, or anything else is on screen (a pop-up, a sign-in or terms page), ask me to turn the two switches off by hand (App Market > Settings), and wait until I confirm.
      In the rollback files, add a comment line (REM in rollback.bat, # in rollback.sh) saying these two App Market switches were turned off and can be turned back on in App Market > Settings. List both switches and their result in the report. Tested on an OPPO CPH2869 / ColorOS 17 / Android 17 (India, App Market 26.8.60_IN): the after-install ad page came from com.heytap.market (screen com.oplus.exp.installed.rec.core.InstalledRecommendActivity), not from Phone Manager, and the "Security test for apps not from App Market" switch was on by default. Reading the screen with uiautomator and tapping that row with "input tap" turned it off, and the next screen read showed it off.
 
@@ -447,7 +463,7 @@ Also report:
     Xiaomi / Redmi / POCO:  in Security, Themes, File Manager, Music, Downloads and Mi Browser, open the app's own Settings and turn off "Receive recommendations" or "Online content"; if com.miui.msa.global was NOT removed, also turn it off under "Authorization & revocation" (search Settings for it).
     OPPO / realme / OnePlus: long-press the home screen > Home screen settings > turn off "App suggestions" (or similar); delete the "Hot Apps" and "Hot Games" folders (they are sponsored shortcuts, not apps). Also: Settings > Additional settings > "Get recommendations" > off (on newer versions it may be under Privacy > Ads & privacy, or search Settings for "recommendations"). The ad page after every app install is handled in Phase 6, step 6.
     Samsung:                search Settings for "Customization Service" and turn it off; in Galaxy Store > Settings, turn off marketing notifications.
-    vivo / iQOO:            in V-Appstore and the vivo Browser (if they are still there), open their Settings and turn off push and recommendations. In V-Appstore > Tools (or Me) > Settings, turn off "Hot apps and games on home screen" (or similar); if a confirmation pop-up appears, keep the setting off. Ads or "recommended apps" after every app install come from the install security scan of i Manager (com.iqoo.secure, UAD-ng Expert: never remove it). Tell me to open i Manager (or Settings) > Settings and turn off the security check on installation and any "recommendations" switch, and to search Settings for "recommend" if the menu is elsewhere.
+    vivo / iQOO:            in V-Appstore and the vivo Browser (if they are still there), open their Settings and turn off push and recommendations. V-Appstore's "Apps" / "Games" home-screen tiles are handled in Phase 6, step 7. Ads or "recommended apps" after every app install come from the install security scan of i Manager (com.iqoo.secure, UAD-ng Expert: never remove it). Tell me to open i Manager (or Settings) > Settings and turn off the security check on installation and any "recommendations" switch, and to search Settings for "recommend" if the menu is elsewhere.
     Xiaomi / Redmi / POCO (install scan): in Security > Settings, turn off "Receive recommendations"; the scan after installing an app then shows no ads.
     Motorola:               the "Games" folder on the home screen is filled with shortcuts to apps that are NOT installed (they download when tapped, and show ads). See "Home-screen promo folders" below.
   Home-screen promo folders ("Games", "Hot Apps", "Hot Games", "More apps"; on Motorola, vivo, iQOO, OPPO, realme, Xiaomi and others). A folder can hold two kinds of icons:
@@ -497,6 +513,7 @@ Read-only:
   adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
   adb shell sleep <seconds>
   adb shell am start -n com.heytap.market/com.oplus.market.setting.ExpSettingActivity   (Phase 6 step 6 only: opens App Market's settings screen; changes nothing by itself)
+  adb shell am start -n com.vivo.appstore/.activity.SettingsActivity   (Phase 6 step 7 only: opens V-Appstore's settings screen; changes nothing by itself. The screen-reading, scroll, tap and home commands below are allowed in step 7 too, for the two named V-Appstore switches and their "Close" pop-up)
   adb shell uiautomator dump /sdcard/ui.xml | adb shell cat /sdcard/ui.xml | adb shell rm /sdcard/ui.xml   (Phase 6 step 6 only: reads the screen)
   adb shell input swipe ... | adb shell input tap <x> <y> | adb shell input keyevent KEYCODE_HOME   (Phase 6 step 6 only: scroll, tap one of the two named App Market switches, go home, and long-press / remove the "AppLong" and "GameLong" home-screen tiles)
   adb shell uptime | adb shell cat /proc/uptime
@@ -509,11 +526,16 @@ Changes (Phase 5 only, after my approval):
   adb shell cmd appops set <package> POST_NOTIFICATION ignore
   adb shell cmd appops set <package> RUN_ANY_IN_BACKGROUND ignore
   adb shell cmd appops set <package> RUN_IN_BACKGROUND ignore
+  adb shell pm revoke <package> android.permission.POST_NOTIFICATIONS   (A4 stores only)
+  adb shell pm set-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed   (A4 stores only)
+  adb shell dumpsys package <package>   (read-only: check the notification permission)
 Restore:
   adb shell cmd package install-existing --user 0 <package>
   adb shell pm install-existing --user 0 <package>
   adb shell pm enable --user 0 <package>
   adb shell cmd appops set <package> <op> <recorded mode>
+  adb shell pm clear-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed
+  adb shell pm grant <package> android.permission.POST_NOTIFICATIONS
 Other:
   adb reboot   (once, in Phase 6; again only if something broke and was undone, or once per extra round in Phase 8)
 
