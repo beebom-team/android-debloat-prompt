@@ -1,5 +1,7 @@
 # Android Debloat Prompt
 
+**English** | [हिन्दी](README.hi.md)
+
 A copy-paste prompt that turns any AI assistant (Claude, ChatGPT, Gemini, and others) into a careful guide for removing preinstalled bloatware from an Android phone. No root needed.
 
 The AI reads your phone over a USB cable and checks every app against the community-maintained [Universal Android Debloater Next Generation](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) list. It shows you what is safe to remove and **waits for your approval** before changing anything. It writes an undo file before each removal, so everything can be put back.
@@ -42,6 +44,18 @@ At the end, the AI gives you a **before/after report** with measured numbers. Re
 
 Your numbers will differ. They come from your phone.
 
+### Before and after: REDMI Note 17
+
+**Before**
+
+![REDMI Note 17 home screens before debloating: two home pages, a "More apps" folder and a "Games" folder full of preinstalled games](images/redmi-before.jpg)
+
+**After**
+
+![REDMI Note 17 home screens after debloating: the Games folder, Mi Store, App vault and other preinstalled apps are gone](images/redmi-after.jpg)
+
+Gone: the whole Games folder (10 preinstalled games), Bubble Shooter, WPS Office, Mi Store, Mi Home, App vault, Game Centre, Music and Services & feedback. Apps the owner wanted to keep, such as Facebook, Instagram, Spotify and Netflix, stayed. Indus Appstore stayed but was muted. Amazon (in "More apps") was missed on this run; the prompt now always lists a preinstalled Amazon as bloatware.
+
 ---
 
 ## Is this safe?
@@ -51,7 +65,7 @@ It is designed to be as safe as possible, but no tool can promise it works on ev
 - **Nothing is deleted from the phone's system.** Apps are removed only for your user profile (`pm uninstall --user 0`). For apps that are part of the system, the installation file stays on the phone, so they can be restored with one command or by a factory reset. The removed apps' own data and cache are deleted; that's what frees storage.
 - **Some preinstalled apps are really "downloaded" apps** (for example partner games, Mi Store or WPS Office on Xiaomi, or vivo Feedback, which lives in `/system/custom/app` on vivo phones). These are deleted completely, and the undo file can't bring them back; you reinstall them from the Play Store. The AI marks them with † in the list so you know before you approve.
 - **Apps you probably use are never in a "remove all" choice.** UAD-ng rates apps like WhatsApp, Instagram, Google Pay and Gmail as removable. The AI puts them in a separate "Probably yours" list and removes one only if you name it. The same goes for **UPI and banking apps** (Google Pay, BHIM, your bank's app), **government apps** (Sanchar Saathi, DigiLocker, UMANG, mAadhaar), **operator apps** (MyJio, Airtel Thanks, Vi) and **Truecaller**, even when they came preinstalled.
-- **Preinstalled partner apps and games do count as bloatware**, for example Candy Crush, Block Blast, Dailyhunt, Josh, ShareChat, Moj, Snapchat, LinkedIn, ChatGPT, Amazon, Flipkart, Meesho, JioHotstar, a preinstalled Paytm or PhonePe, and every preloaded loan app. They are in "Recommended" and marked †, so you can leave out any you use.
+- **Preinstalled partner apps and games do count as bloatware**, for example Candy Crush, Block Blast, GOGO Blast, Dailyhunt, Josh, ShareChat, Moj, Snapchat, LinkedIn, ChatGPT, Amazon, Flipkart, Meesho, JioHotstar, a preinstalled Paytm or PhonePe, and every preloaded loan app. They are in "Recommended" and marked †, so you can leave out any you use.
 - **You approve every removal.** The AI stops and shows you a table first.
 - **An undo file is written first.** Before each removal, the AI adds the restore command to `rollback.bat` (Windows) and `rollback.sh` (Mac/Linux).
 - **Important apps are protected.** The AI is told never to touch your dialer, SMS app, keyboard, home screen, Play Store, Google Play services, camera, emergency alerts, security, or system update components.
