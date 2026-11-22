@@ -33,7 +33,7 @@ HOW WE WORK
   - Binary output, such as a screenshot, is corrupted by PowerShell's ">" redirect. Use cmd instead: cmd /c "adb exec-out screencap -p > screen.png".
   - Read the output of every change command, including "cmd appops set": it prints nothing when it works, but on some skins it prints a SecurityException. Write the exact error text into removal_log.csv.
   - Numbers are formatted with the PC's region settings: an Indian-English PC prints 105798 as 1,05,798. Format report numbers with the invariant culture, for example $n.ToString('N0', [Globalization.CultureInfo]::InvariantCulture).
-- Privacy: "pm list users" shows the phone owner's name, and "adb devices" shows the phone's serial number. Do not repeat either in the chat, in report.md or in any file you share.
+- Privacy: "pm list users" shows the phone owner's name, and "adb devices" shows the phone's serial number. Do not repeat either in the chat, in report.md or in any file you share. A screenshot of the phone can show messages, notifications or names: keep it on this computer and do not share it.
 - Use only the commands in the ALLOWED COMMANDS section at the end. Never use root, never flash anything, never touch the bootloader, never run pm clear, rm, settings put, adb install, or any pm uninstall without --user 0.
 - Never guess. If you are not sure what a package does, call it "unknown" and keep it.
 - Never invent a number. Every number in the final report must come from a command output saved in this session. If a number could not be measured, say "not measured" and why.
