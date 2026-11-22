@@ -20,18 +20,21 @@ HOW WE WORK
 - If you can run terminal commands yourself (for example Claude Code, Codex CLI, Gemini CLI, or another agent with a shell), run them and show me the important output.
 - If you cannot run commands, give me ONE command at a time in a code block, wait for me to paste the output, then continue.
 - First detect my computer's operating system and use commands that work in its shell. On Windows, do not rely on grep, sed, awk, wc or Unix pipes: run plain adb commands and do any counting or filtering yourself or with PowerShell.
+- On Windows, Python is often missing even when "python" seems to exist (it can be only a Microsoft Store shortcut that prints "Python was not found"). If so, use PowerShell for every script. Windows PowerShell 5.1's ConvertFrom-Json cannot load the UAD-ng list, because some keys differ only by letter case. Load it with .NET instead: Add-Type -AssemblyName System.Web.Extensions, then a System.Web.Script.Serialization.JavaScriptSerializer with MaxJsonLength set to [int]::MaxValue.
+- Privacy: "pm list users" shows the phone owner's name, and "adb devices" shows the phone's serial number. Do not repeat either in the chat, in report.md or in any file you share.
 - Use only the commands in the ALLOWED COMMANDS section at the end. Never use root, never flash anything, never touch the bootloader, never run pm clear, rm, settings put, adb install, or any pm uninstall without --user 0.
 - Never guess. If you are not sure what a package does, call it "unknown" and keep it.
 - Never invent a number. Every number in the final report must come from a command output saved in this session. If a number could not be measured, say "not measured" and why.
 - If any command fails or shows something unexpected, stop and explain before doing anything else.
 - Phases 0 to 3 are read-only. Nothing on the phone changes until I approve a list in Phase 4.
-- Restart the phone only ONCE, after all approved changes are applied (Phase 6). Frequent restarts are annoying. The only exception is if something breaks and must be undone.
+- Restart the phone only ONCE, after all approved changes are applied (Phase 6). Frequent restarts are annoying. The only exceptions are if something breaks and must be undone, or if I approve more removals in Phase 8 (one restart per extra round).
 
 =====================================================================
 PHASE 0: PREFLIGHT (read-only)
 =====================================================================
 1. Run: adb version
    If adb is missing, tell me to install Google's official "SDK Platform-Tools" from https://developer.android.com/tools/releases/platform-tools and stop. Do not suggest downloads from any other site.
+   If I say I installed it but "adb" is still not recognized, it is usually unzipped but not on the PATH. Before asking me again, check the usual places (read-only): C:\platform-tools\adb.exe, %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe, %LOCALAPPDATA%\Microsoft\WinGet\Links\adb.exe, and platform-tools inside my Downloads and Desktop folders (on macOS/Linux: ~/platform-tools, ~/Downloads/platform-tools, ~/Library/Android/sdk/platform-tools). If you find it, use that full path for every command in this session. In rollback.bat, start with "set ADB=adb", then 'if exist "<full path>" set ADB="<full path>"', and write every command as %ADB% shell ..., so the undo file works even when adb is not on the PATH.
 2. Run: adb devices -l
    I need exactly one device with the status "device".
    - "unauthorized": tell me to unlock the phone and tap Allow on the USB debugging prompt (tick "Always allow from this computer"), then run it again.
@@ -78,6 +81,7 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
      adb shell pm list packages -d      ->  packages_before_disabled.txt
    Count the lines in each file and write the counts down. These are the "apps before" numbers.
    (If you cannot write files, tell me to save each output myself, and write the counts in the chat.)
+   From packages_before_all.txt (it shows each package's file path), mark every package that is in packages_before_downloaded.txt as "downloaded-type". This includes preinstalled apps whose path starts with /data/app, /product/data-app or /cust/app (for example partner games and Xiaomi's Notes, Calendar or Weather on some phones). On a phone with one user, "pm uninstall --user 0" deletes a downloaded-type app completely. "install-existing" cannot bring it back, only the Play Store or a factory reset can. Tested on HyperOS 3 / Android 16: 18 downloaded-type apps were removed, and packages_all went from 434 to 416.
 
 2. Find the apps that currently fill an essential role. These are PROTECTED and must never be removed or restricted:
      Home screen:   adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
@@ -148,7 +152,8 @@ A2. Ad services, ad pop-ups and promo installers. Match packages whose UAD-ng de
 A3. "Display over other apps" pop-ups. Run:
      adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
    (If this is not supported on this Android version, say so and skip A3.)
-   List every app allowed to draw over other apps that is NOT protected, NOT an accessibility service, and NOT a messaging, screen-recorder, floating-calculator, or video-player app I might use on purpose. Suggest restricting the rest.
+   List every app allowed to draw over other apps that is NOT protected, NOT an accessibility service, and NOT a messaging, screen-recorder, floating-calculator, floating-notes, or video-player app I might use on purpose. Suggest restricting the rest, but only user-facing apps (ones with their own app icon, such as weather, music, cleaner, games hub or app store).
+   This list is usually long and is mostly system services that need pop-ups to work: the in-call screen, battery manager, security center, permission dialogs, SystemUI, Settings, updaters, Find My Device, account and sync services, casting, and OEM frameworks (for example com.android.incallui, com.miui.powerkeeper, com.miui.securitycore, com.xiaomi.xmsf). Never restrict these. Name them in the review as "kept on purpose" so I can see you checked them.
    Do not list an app here if it is already in A1, A2, A4 or Group B with the action "uninstall": uninstalling it removes its pop-ups anyway. If I later exclude that app from uninstalling, offer to restrict it instead.
    Action for A3: "Restrict" = first record the current mode with
      adb shell cmd appops get <package> SYSTEM_ALERT_WINDOW
@@ -166,7 +171,9 @@ A4. Preinstalled app stores that are not Google Play. Never touch com.android.ve
        first record the current mode: adb shell cmd appops get <package> <op>
        then:                          adb shell cmd appops set <package> <op> ignore
      If an op is not supported on this phone, say so and skip that op.
+     If "appops get" prints "No operations." the op is at its default mode: record the mode as "default" (the rollback line is then "cmd appops set <package> <op> default").
      On Android 12 or older, POST_NOTIFICATION does not exist: tell me to turn off this app's notifications in Settings > Apps > <store> > Notifications, and list it in the final report.
+     On Android 13 and newer, notifications are a runtime permission, and the system may undo POST_NOTIFICATION right away (tested on HyperOS 3 / Android 16: after "set ... ignore", "get" showed "allow" again). The Phase 5 check catches this. Log it as failed, do not try another method, and give me the manual Settings steps in the final report. RUN_ANY_IN_BACKGROUND and RUN_IN_BACKGROUND did work.
 
 ---------------------------------------------------------------------
 GROUP B: OTHER BLOATWARE
@@ -175,6 +182,16 @@ Everything else installed that UAD-ng rates Recommended, Advanced or Expert:
 - Recommended: safe for almost everyone. Action: uninstall for user 0.
 - Advanced: features some people use (OEM assistants, duplicate apps, Google apps like YouTube Music). Action: uninstall for user 0.
 - Expert: action "disable" only (pm disable-user), never uninstall.
+
+UAD-ng also rates many popular apps "Recommended", for example WhatsApp, Instagram, Facebook, LinkedIn, Netflix, Spotify, Amazon, Google Pay / Wallet, Gmail, Google Photos, Maps, YouTube, Drive and Files by Google. Uninstalling without -k deletes their data (chats, notes, downloads), so a reply like "all Recommended" must never remove them by accident. Put apps I am likely to use, and anything in packages_before_downloaded.txt that I may have installed myself, in a separate list called "Probably yours: not suggested". It is not part of any tier, and you remove an app from it only if I name it.
+
+KEEP FOR SAFETY even when UAD-ng rates them Recommended or Advanced, and name them in the review as "left out for safety":
+- SIM, modem and calling parts: package names with a part that starts with "uim" or "sim", or that contain "atfwd", "iwlan" (VoWi-Fi), "xdivert" (call divert), "qcrilmsgtunnel", "confdialer", "vsim", "simactivate", "entitlement" or "kryten". Also com.android.stk (SIM toolkit), com.android.mms and com.android.mms.service.
+- Emergency alerts: descriptions mentioning emergency, alerts or public announcements (for example com.qualcomm.qti.xrcb), and personal-safety apps.
+- Wi-Fi and Bluetooth helpers: descriptions mentioning Wi-Fi, Bluetooth, aptX, captive portal or hotspot login.
+- Display colour, power saving, touch, biometric or payment authentication helpers (for example colorservice, qcolor, powersavemode, ifaa, soter, trustservice, touchservice, credentialmanager).
+- Android mainline modules, which Google Play system updates need: anything whose name contains "mainline", and adservices, ondevicepersonalization and federatedcompute.
+- Parts of the OEM home screen, lock screen or quick settings (for example miui.systemui.plugin, launcher "res" or "layout" packages, always-on display, theme manager, wallpaper pickers).
 
 ---------------------------------------------------------------------
 HARD DENYLIST (applies to every group)
@@ -200,9 +217,13 @@ Show:
      # | Package | What it is (plain English) | Sub-group (A1 Glance / A2 Ads / A3 Pop-ups / A4 Store) | Action (uninstall / restrict / mute) | Rating source (UAD-ng or AI knowledge) | What I lose
    Group A is PRE-SELECTED: it will be applied unless I exclude items.
 2. Group B as one table per tier (Recommended, Advanced, Expert), with the same columns plus "Tier". Group B is NOT pre-selected.
+   Number the items per tier (R1, R2 ... for Recommended, V1 ... for Advanced, E1 ... for Expert) so I can name them in my reply.
+   Mark every downloaded-type package (Phase 2) with a "†" and say in "What I lose": "The undo file cannot restore it. Reinstall it from the Play Store."
+   On Xiaomi HyperOS, mark Xiaomi's own user-facing apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder) as "HyperOS may refuse this (Failure [-1000])". Tested on HyperOS 3: all seven were refused.
 3. If no Glance or lock-screen feed was found, say so clearly, and list the package names you checked for.
 4. The PROTECTED apps from Phase 2, so I know they will be kept.
-5. The count of packages per group and tier.
+5. The "Probably yours: not suggested" list and the "left out for safety" list from Phase 3, as short lists of names.
+6. The count of packages per group and tier.
 
 Then STOP. Do not change anything until I reply. Examples of replies I might give:
   "go"                                  = apply Group A only
@@ -231,7 +252,8 @@ For EACH approved package, in this exact order:
 2. THEN make the change:
      uninstall:  adb shell pm uninstall --user 0 <package>
                  (no -k flag, so the app's data and cache are deleted and the storage is actually freed;
-                  the app itself can still be restored with the rollback command)
+                  a preinstalled system app can still be restored with the rollback command, but a
+                  downloaded-type app (marked † in Phase 4) is deleted completely and must be reinstalled from the Play Store)
      disable:    adb shell pm disable-user --user 0 <package>
      restrict:   adb shell cmd appops set <package> SYSTEM_ALERT_WINDOW ignore
      mute:       adb shell cmd appops set <package> <op> ignore   (for each op in A4)
@@ -240,6 +262,11 @@ For EACH approved package, in this exact order:
      disable must print "new state: disabled-user".
      For restrict and mute, run adb shell cmd appops get <package> <op> and confirm it shows "ignore".
    On any other result, log it as failed, do not try another method, and move on.
+   Known results that are not dangerous, so log them and keep going:
+     - "Failure [-1000]" on Xiaomi HyperOS: the system protects that app from uninstalling. It stays installed and unchanged.
+     - "Failure [not installed for 0]": the app was already removed.
+     - POST_NOTIFICATION reads back as "allow" on Android 13+, or SYSTEM_ALERT_WINDOW reads back as "default" instead of "ignore": the system overrode the change. Log it as failed and, at the end, give me the manual Settings steps (or offer to uninstall the app instead, if it is in Group B).
+   Any other failure is unexpected: stop and explain before the next package.
 4. Add a line to removal_log.csv.
 
 Order: Group A first, then Group B Recommended, then Advanced, then Expert, all in one pass. Do NOT restart the phone between groups. Keep going until every approved change is done, then go to Phase 6.
@@ -292,7 +319,7 @@ Then write the final report in the chat AND save it as report.md. It MUST contai
 Also report:
 - Storage freed, two ways:
   a. Measured: the change in "Used" on /data between df_before.txt and df_after.txt.
-  b. Estimated: the sum of App Size + Data Size + Cache Size for the removed packages, from diskstats_before.txt. If diskstats does not list a package, say so.
+  b. Estimated: the sum of App Size + Data Size + Cache Size for the removed packages, from diskstats_before.txt. If diskstats does not list a package, say so. On some phones (tested: HyperOS 3 / Android 16), diskstats has no "Package Names", "App Sizes", "App Data Sizes" or "Cache Sizes" lines at all, only partition totals. Then write "not measured: diskstats on this phone has no per-app sizes".
   Explain that preinstalled apps live on the read-only system partition, so their installation files stay on the phone. Only their updates, data and cache on /data are freed, so the storage freed can be small. That is expected.
 - RAM freed, two ways:
   a. Main number: the RAM the removed and disabled apps were using. Add up the PSS of the processes in meminfo_before.txt that belong to them (a process belongs to a package if its name equals the package name or starts with "<package>:"). After removal, these processes cannot run, so this RAM is freed.
@@ -306,11 +333,22 @@ Also report:
     Samsung:                              Settings > Lock screen > Glance (or Wallpaper services) > choose None.
     Motorola / Nothing / vivo:            Settings > Lock screen (or Wallpaper) > Glance > turn off.
   Ask me to confirm on the phone that the lock screen no longer shows stories or ads.
-- App stores: which were removed, which were muted, and any that need notifications turned off by hand (Android 12 or older).
+- App stores: which were removed, which were muted, and any that need notifications turned off by hand (Android 12 or older, or where POST_NOTIFICATION did not stick).
+- Failed items: each one, why it failed, and what I can do by hand instead.
 - The files created and where they are.
-- How to undo everything: connect the phone, enable USB debugging, open a terminal in this folder, and run rollback.bat (Windows) or sh rollback.sh (macOS/Linux).
+- How to undo everything: connect the phone, enable USB debugging, open a terminal in this folder, and run rollback.bat (Windows) or sh rollback.sh (macOS/Linux). List the downloaded-type apps (†) that the undo file cannot bring back, and say that they can be reinstalled from the Play Store.
 - That major system updates can bring some apps back, and this process can be run again afterwards.
 No claims beyond what the measurements show.
+
+=====================================================================
+PHASE 8: ASK IF I WANT TO REMOVE MORE APPS
+=====================================================================
+After the report, always end by asking me:
+  "Do you want to remove any more apps?"
+Next to the question, show a short numbered list of what is still possible: the Group B items I did not approve (by tier), the "Probably yours: not suggested" list, and any Group B apps that failed but could be disabled instead. Do not ask for anything or change anything else.
+- If I say no, we are done.
+- If I name apps or tiers, treat that as a new Phase 4 approval for only those items. Apply them with Phase 5 (rollback lines first, newest first), then do one restart and the Phase 6 checks, then update the report with new "after" numbers (Phase 7). Then ask this question again.
+- If I name an app that is not on any list, check it against UAD-ng and the HARD DENYLIST first, and tell me what it is and what I would lose before doing anything.
 
 =====================================================================
 IF THE PHONE WILL NOT BOOT
@@ -347,7 +385,7 @@ Restore:
   adb shell pm enable --user 0 <package>
   adb shell cmd appops set <package> <op> <recorded mode>
 Other:
-  adb reboot   (once, in Phase 6; again only if something broke and was undone)
+  adb reboot   (once, in Phase 6; again only if something broke and was undone, or once per extra round in Phase 8)
 
 Start with Phase 0 now.
 ```
