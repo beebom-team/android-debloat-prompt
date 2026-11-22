@@ -4,7 +4,11 @@ A copy-paste prompt that turns any AI assistant (Claude, ChatGPT, Gemini, and ot
 
 The AI reads your phone over a USB cable and checks every app against the community-maintained [Universal Android Debloater Next Generation](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) list. It shows you what is safe to remove and **waits for your approval** before changing anything. It writes an undo file before each removal, so everything can be put back.
 
+**✅ Tested on Xiaomi (Redmi), realme, vivo, Motorola and Samsung phones, on Android 16 and 17.** [See the results](#what-it-does-by-default).
+
 **➡️ The prompt is in [PROMPT.md](PROMPT.md).**
+
+> ⚠️ **Copy the prompt only from this page** (github.com/beebom-team/android-debloat-prompt). Don't use copies forwarded on WhatsApp, Telegram or other sites. A changed prompt could make the AI remove the wrong apps.
 
 ### Quick start
 1. Back up your phone and charge it above 50% ([Step 1](#step-1-back-up-your-phone)).
@@ -55,6 +59,25 @@ It is designed to be as safe as possible, but no tool can promise it works on ev
 - **Only one restart.** The AI applies everything you approved, then restarts the phone once at the end and asks you to test calls, SMS, camera and other basics. If something broke, it undoes the newest group first.
 
 **Do not use this on a work or school phone** that your organisation manages. The prompt detects this and stops.
+
+---
+
+## Privacy
+
+- **Everything happens between your computer and your phone,** over the USB cable. The prompt doesn't upload anything by itself.
+- **The AI you use sees what the commands show:** your phone's brand, model, Android version and its list of installed apps. If you use an online AI, this goes to that AI company like any other chat message.
+- **Your name and your phone's serial number are kept out.** The prompt tells the AI never to repeat them in the chat or in any file it writes.
+- **Your messages, photos, contacts and passwords are never read.** The prompt only allows commands that read basic phone details, list apps, and measure storage, RAM and battery.
+- **The only download** is the public UAD-ng app list from GitHub, when the AI can run commands itself (Option A).
+
+---
+
+## No computer?
+
+This prompt needs a Windows, Mac or Linux computer. If you only have a phone, [Canta](https://github.com/samolego/Canta) is a free Android app that removes preinstalled apps without a computer or root, using the same UAD-ng list. Before you try it, know that:
+- It needs another app, [Shizuku](https://shizuku.rikka.app/), set up first.
+- Canta's own page says Android 16 needs a modified Shizuku, and some OPPO / OnePlus apps can't be removed with it.
+- It doesn't do this prompt's checks, undo files or before/after report, so remove only apps you recognise.
 
 ---
 
@@ -286,6 +309,14 @@ Mostly. System apps are removed for your user profile only, and the undo files r
 
 **Which phones does it work on?**
 Android 5 and newer from any brand. On Android 17, the phone may refuse to uninstall any preinstalled app without root (seen on a Motorola edge 70 fusion and a Samsung Galaxy M47), so apps are disabled instead and little or no storage is freed. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
+
+---
+
+## Report your phone
+
+Tried it? Tell us how it went, especially on a brand or model that isn't in the results table yet. Every report helps the prompt handle more phones.
+
+**[➡️ Report your phone](https://github.com/beebom-team/android-debloat-prompt/issues/new?template=phone-report.yml)** (needs a free GitHub account). Include the phone model, Android version, which step had a problem (if any), and the before/after table from your `report.md`. Don't paste your name, phone number or the phone's serial number.
 
 ---
 
