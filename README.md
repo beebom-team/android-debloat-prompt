@@ -6,7 +6,7 @@ A copy-paste prompt that turns any AI assistant (Claude, ChatGPT, Gemini, and ot
 
 The AI reads your phone over a USB cable and checks every app against the community-maintained [Universal Android Debloater Next Generation](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) list. It shows you what is safe to remove and **waits for your approval** before changing anything. It writes an undo file before each removal, so everything can be put back.
 
-**✅ Tested on Xiaomi (Redmi), realme, vivo, Motorola and Samsung phones, on Android 16 and 17.** [See the results](#what-it-does-by-default).
+**✅ Tested on Xiaomi (Redmi), realme, vivo, Motorola, Samsung and OPPO phones, on Android 16 and 17.** [See the results](#what-it-does-by-default).
 
 **➡️ The prompt is in [PROMPT.md](PROMPT.md).**
 
@@ -41,6 +41,7 @@ At the end, the AI gives you a **before/after report** with measured numbers. Re
 | vivo T5 | 75 / 1 | 370 MB | 4.6 GB |
 | moto edge 70 fusion | 5 / 48 | 420 MB | 2.0 GB |
 | Samsung Galaxy M47 | 17 / 71 | 277 MB | 1.8 GB |
+| OPPO K14 5G | 22 / 29 | 276 MB | 2.4 GB |
 
 Your numbers will differ. They come from your phone.
 

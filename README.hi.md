@@ -6,7 +6,7 @@
 
 AI USB केबल से आपका फ़ोन पढ़ता है और हर ऐप को कम्युनिटी की बनाई [Universal Android Debloater Next Generation (UAD-ng)](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) लिस्ट से मिलाता है। वह आपको बताता है कि क्या हटाना सुरक्षित है, और कुछ भी बदलने से पहले **आपकी मंज़ूरी का इंतज़ार करता है**। हर ऐप हटाने से पहले वह एक undo फ़ाइल लिखता है, ताकि सब कुछ वापस लाया जा सके।
 
-**✅ Xiaomi (Redmi), realme, vivo, Motorola और Samsung फ़ोन पर, Android 16 और 17 के साथ टेस्ट किया गया।** नतीजे नीचे देखें।
+**✅ Xiaomi (Redmi), realme, vivo, Motorola, Samsung और OPPO फ़ोन पर, Android 16 और 17 के साथ टेस्ट किया गया।** नतीजे नीचे देखें।
 
 **➡️ प्रॉम्प्ट [PROMPT.md](PROMPT.md) में है।** प्रॉम्प्ट अंग्रेज़ी में है, लेकिन उसे पेस्ट करने के बाद आप AI से हिन्दी में बात कर सकते हैं।
 
@@ -41,6 +41,7 @@ AI USB केबल से आपका फ़ोन पढ़ता है औ�
 | vivo T5 | 75 / 1 | 370 MB | 4.6 GB |
 | moto edge 70 fusion | 5 / 48 | 420 MB | 2.0 GB |
 | Samsung Galaxy M47 | 17 / 71 | 277 MB | 1.8 GB |
+| OPPO K14 5G | 22 / 29 | 276 MB | 2.4 GB |
 
 आपके आँकड़े अलग होंगे। वे आपके फ़ोन से आते हैं।
 
