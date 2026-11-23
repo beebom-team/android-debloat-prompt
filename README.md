@@ -1,4 +1,4 @@
-# Android Debloat Prompt
+# Android Phones Debloat Prompt
 
 **English** | [हिन्दी](README.hi.md)
 
