@@ -1,4 +1,4 @@
-# Android Debloat Prompt
+# Android Phones Debloat Prompt
 
 Copy everything inside the box below into your AI assistant (Claude, ChatGPT, Gemini, or any other) as it is. You don't need to fill anything in.
 
