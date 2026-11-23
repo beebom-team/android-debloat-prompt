@@ -10,7 +10,7 @@ The AI reads your phone over a USB cable and checks every app against the commun
 
 **➡️ The prompt is in [PROMPT.md](PROMPT.md).**
 
-> ⚠️ **Copy the prompt only from this page** (github.com/beebom-team/android-phones-debloat-prompt). Don't use copies forwarded on WhatsApp, Telegram or other sites. A changed prompt could make the AI remove the wrong apps.
+> ⚠️ **Copy the prompt only from this page** (github.com/beebom-team/android-debloat-prompt). Don't use copies forwarded on WhatsApp, Telegram or other sites. A changed prompt could make the AI remove the wrong apps.
 
 ### Quick start
 1. Back up your phone and charge it above 50% ([Step 1](#step-1-back-up-your-phone)).
@@ -334,7 +334,7 @@ Android 5 and newer from any brand. On Android 17, the phone may refuse to unins
 
 Tried it? Tell us how it went, especially on a brand or model that isn't in the results table yet. Every report helps the prompt handle more phones.
 
-**[➡️ Report your phone](https://github.com/beebom-team/android-phones-debloat-prompt/issues/new?template=phone-report.yml)** (needs a free GitHub account). Include the phone model, Android version, which step had a problem (if any), and the before/after table from your `report.md`. Don't paste your name, phone number or the phone's serial number.
+**[➡️ Report your phone](https://github.com/beebom-team/android-debloat-prompt/issues/new?template=phone-report.yml)** (needs a free GitHub account). Include the phone model, Android version, which step had a problem (if any), and the before/after table from your `report.md`. Don't paste your name, phone number or the phone's serial number.
 
 ---
 
