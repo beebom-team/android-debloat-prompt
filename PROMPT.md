@@ -45,10 +45,20 @@ ANDROID VERSION DIFFERENCES (read before Phase 1; apply everywhere)
 =====================================================================
 This prompt must work on every Android version from 5 (SDK 21) to the newest. Read ro.build.version.sdk in Phase 1 and pick commands by SDK number, never by the marketing version name. If a command prints "not found", "Unknown command", "Error: unknown command" or only its help text, it is not on this version: use the fallback below, say so in one line, and continue. This is not a failure and not a reason to stop.
   - "cmd" (cmd package, cmd appops, cmd role) exists only on SDK 24+ (Android 7+).
-      SDK 21-23: there is no "cmd". Use "pm install-existing" for restores, "pm list packages" for checks, and "appops get/set <package> <op>" without "cmd" for app-ops (if "appops" is not found either, skip app-op changes and give me the manual Settings steps instead).
-  - Restore after uninstall: SDK 26+ (Android 8+): adb shell cmd package install-existing --user 0 <package>
-                             SDK 21-25 (Android 5 to 7.1): adb shell pm install-existing --user 0 <package>
-    Write the one that matches this phone into the rollback files.
+      SDK 21-23: there is no "cmd". Use "pm list packages" for checks, and "appops get/set <package> <op>" without "cmd" for app-ops (if "appops" is not found either, skip app-op changes and give me the manual Settings steps instead).
+  - UNDO SAFETY ON OLD ANDROID (important). "install-existing", the only command that brings back a preinstalled app after "pm uninstall --user 0", is part of Android only from SDK 26 (Android 8). Plain Android 5, 6 and 7 have no command to restore it; only a factory reset would. So a PREINSTALLED SYSTEM app (not downloaded-type) must never be uninstalled on SDK 21-25 unless restore is proven to exist. Use this action instead, everywhere this prompt says "uninstall" for a system app:
+      SDK 26+ (Android 8+):         uninstall  = adb shell pm uninstall --user 0 <package>
+                                    restore    = adb shell cmd package install-existing --user 0 <package>
+      SDK 23-25 (Android 6 to 7.1): first, once, run: adb shell cmd package install-existing
+                                    (no package name; it changes nothing). If it prints an error about a missing package name or argument, this phone's maker added the command: use the SDK 26+ rows. If it prints "Unknown command", "not found" or the cmd help text, it does not exist: DISABLE instead of uninstalling:
+                                    disable    = adb shell pm disable-user --user 0 <package>
+                                    restore    = adb shell pm enable --user 0 <package>
+      SDK 21-22 (Android 5.x):      "pm disable-user" needs root on this version. HIDE instead (the method UAD-ng uses on Android 5):
+                                    hide       = adb shell pm hide --user 0 <package>      (success prints "new hidden state: true")
+                                    restore    = adb shell pm unhide --user 0 <package>
+    Downloaded-type apps (†) are still uninstalled with "pm uninstall --user 0" on every version: the Play Store is their restore path anyway.
+    Disabled and hidden apps keep their files and data, so on SDK 21-25 the storage freed comes mostly from † apps. Tell me this in the Phase 1 summary and in Phase 4, in one plain line.
+    Write the matching restore line into the rollback files.
   - "cmd package resolve-activity" exists only on SDK 24+; if "--brief" is rejected, run it again without "--brief" and read the package name from the output.
   - "cmd role get-role-holders" exists only on SDK 29+ (Android 10+). Fallbacks for older phones are in Phase 2, step 2.
   - "dumpsys webviewupdate" exists only on SDK 24+. On SDK 21-23 the WebView is com.google.android.webview or com.android.webview: keep both. On SDK 24-28 (Android 7 to 9), Google Chrome (com.android.chrome) is often the WebView itself: if the WebView output names Chrome, or you cannot tell, Chrome is PROTECTED.
@@ -58,7 +68,7 @@ This prompt must work on every Android version from 5 (SDK 21) to the newest. Re
   - "adb shell df /data": on SDK 21-23 the output has columns "Size Used Free Blksize" with values like "25.3G" instead of 1K-blocks. Convert G/M/K to MB yourself (1G = 1024M), and say in the report that old Android rounds these numbers, so changes under about 100 MB cannot be measured there.
   - "adb shell uptime" output differs by version (older phones print "up time: ..."). Always also read "adb shell cat /proc/uptime" (the first number is seconds since boot) and use that number for comparisons.
   - "dumpsys meminfo": numbers may use "K", "kB" or commas (for example "2,857,568K"). Strip commas and convert to MB. If "Used RAM" or "Free RAM" lines are missing (some old or heavily modified skins), write "not measured" for them; the per-process PSS list ("Total PSS by process") is still enough for the main RAM number.
-  - "pm uninstall --user 0" on preinstalled apps: works without root on SDK 21-36 on most phones. On SDK 37+ (Android 17+) see Phase 1. Newer versions than this prompt knows about may behave like Android 17: if the first preinstalled uninstall is refused, treat the rest the same way (keep trying, offer "disable instead" at the end).
+  - "pm uninstall --user 0" on preinstalled apps: used only on SDK 26+ (see UNDO SAFETY above), where it works without root up to SDK 36 on most phones. On SDK 37+ (Android 17+) see Phase 1. Newer versions than this prompt knows about may behave like Android 17: if the first preinstalled uninstall is refused, treat the rest the same way (keep trying, offer "disable instead" at the end).
   - Android Go edition (low-RAM phones, ro.config.low_ram = true): the "Go" Google apps (for example com.google.android.apps.searchlite, com.google.android.apps.nbu.files, com.android.launcher3 Go builds) may be the only Google, files or home app on the phone. Treat the home app and any app holding a PROTECTED role as protected as usual, and put Files Go in "Probably yours".
 
 =====================================================================
@@ -252,7 +262,7 @@ GROUP B: OTHER BLOATWARE
 Everything else installed that UAD-ng rates Recommended, Advanced or Expert:
 - Recommended: safe for almost everyone. Action: uninstall for user 0.
 - Advanced: features some people use (OEM assistants, duplicate apps, Google apps like YouTube Music). Action: uninstall for user 0.
-- Expert: action "disable" only (pm disable-user), never uninstall.
+- Expert: action "disable" only (pm disable-user), never uninstall. (On SDK 21-22, where disabling needs root, "hide" with pm hide --user 0 instead; it is just as reversible.)
 
 UAD-ng also rates many popular apps "Recommended", for example WhatsApp, Netflix, Google Pay / Wallet, Gmail, Google Photos, Maps, YouTube, Drive and Files by Google. Uninstalling without -k deletes their data (chats, notes, downloads), so a reply like "all Recommended" must never remove them by accident. Put these, messaging, banking and payment apps, the phone maker's everyday tools (calculator, clock, gallery, notes, file manager, sound recorder, screen recorder), and anything in packages_before_downloaded.txt that I may have installed myself (but NOT the partner preloads listed below, such as Amazon, Facebook, Instagram, Spotify, games and short-video apps: those go in Recommended), in a separate list called "Probably yours: not suggested". It is not part of any tier, and you remove an app from it only if I name it.
 
@@ -326,6 +336,7 @@ Show:
    Mark every downloaded-type package (Phase 2) with a "†". Explain "†" once, above the lists: "The undo file cannot restore it. Reinstall it from the Play Store." In review.md, write this in its "What I lose" column.
    On Xiaomi HyperOS, mark Xiaomi's own user-facing apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder) as "HyperOS may refuse this (Failure [-1000])". Tested on HyperOS 3: all seven were refused.
    On OPPO / realme / OnePlus, mark com.heytap.market, com.nearme.gamecenter, com.nearme.instant.platform and com.oplus.olc as "may refuse this (Failure [DELETE_FAILED_INTERNAL_ERROR])". Tested on realme UI 7 / Android 16: all four were refused. On vivo / iQOO (OriginOS), mark com.vivo.magazine the same way: it was refused. Also mark these vivo apps as "OriginOS may refuse this (Failure [DELETE_FAILED_USER_RESTRICTED])". Tested on OriginOS 6 / Android 16, all were refused: com.vivo.appstore, com.vivo.pushservice, com.vivo.assistant, com.vivo.assistantfunction, com.bbk.iqoo.logsystem, com.bbk.cloud, com.vivo.doubleinstance, com.vivo.floatingball, com.vivo.gamewatch, com.vivo.minscreen, com.vivo.SmartKey, com.vivo.vms, com.vivo.vtouch, com.vivo.weather.provider. On the same phone com.vivo.weather, com.vivo.browser, com.vivo.easyshare, com.vivo.compass and most vivo widgets uninstalled fine.
+   On SDK 21-25 (Android 5 to 7.1), say once, above the lists, that preinstalled system apps will be disabled (Android 6-7) or hidden (Android 5) instead of uninstalled, so they can be fully undone, and show "[disable]" or "[hide]" on those lines.
    On Android 17 or newer (SDK 37+), say once, above the lists, that the phone may refuse every uninstall of a preinstalled app (see Phase 1), so these lists may end up being disabled instead of uninstalled.
    Mark every "already off" app (Phase 2) as "(already off)". Its everyday line should say so, because it is not running now and removing it changes little.
    Partner placeholders: some preinstalled partner apps have no app icon. resolve-activity with category LAUNCHER prints "No activity found", and they are often already off. Tested on Motorola / Android 17: com.ertanto.kompas.official and com.zte.iptvclient.android.idmnc. List them in Recommended as partner preloads (AI), marked "(already off)" where that applies.
@@ -355,8 +366,10 @@ If you cannot write files, show me the full content of each file at the end so I
 
 For EACH approved package, in this exact order:
 1. FIRST add its restore command(s) to both rollback files. Insert them directly below the header lines of each file (the first line, plus the "set ADB" lines from Phase 0), not at the end, so the files undo the newest change first:
-     uninstalled:          adb shell cmd package install-existing --user 0 <package>   (SDK 26+)
-                           (SDK 21-25, Android 5 to 7.1: adb shell pm install-existing --user 0 <package>)
+     uninstalled:          adb shell cmd package install-existing --user 0 <package>
+                           (SDK 26+, or SDK 23-25 where the probe in "UNDO SAFETY ON OLD ANDROID" found the command.
+                            On other SDK 21-25 phones, preinstalled system apps are never uninstalled; see below.)
+     hidden (SDK 21-22):   adb shell pm unhide --user 0 <package>
      disabled:             adb shell pm enable --user 0 <package>
                            (ONLY if the package was NOT in packages_before_disabled.txt. Never add an enable line
                             for an app that was already off before the session: the undo file would turn it on.)
@@ -367,13 +380,17 @@ For EACH approved package, in this exact order:
                  (no -k flag, so the app's data and cache are deleted and the storage is actually freed;
                   a preinstalled system app can still be restored with the rollback command, but a
                   downloaded-type app (marked † in Phase 4) is deleted completely and must be reinstalled from the Play Store)
-     disable:    adb shell pm disable-user --user 0 <package>
+                 (SDK 21-25 without the install-existing command: only for downloaded-type † apps.
+                  For a preinstalled system app, use "disable" on SDK 23-25 and "hide" on SDK 21-22 instead.)
+     disable:    adb shell pm disable-user --user 0 <package>   (SDK 23+ only; needs root on SDK 21-22)
+     hide:       adb shell pm hide --user 0 <package>           (SDK 21-22 only)
      restrict:   adb shell cmd appops set <package> SYSTEM_ALERT_WINDOW ignore
      mute:       adb shell cmd appops set <package> <op> ignore   (for each op in A4 that exists on this SDK)
      (SDK 21-23: "appops set" / "appops get" without "cmd", everywhere in this phase.)
 3. Check the result:
      uninstall must print "Success".
      disable must print "new state: disabled-user" (older versions print it as "Package <package> new state: disabled-user"; both are success).
+     hide must print "new hidden state: true", and adb shell pm list packages <package> must then print nothing.
      For restrict and mute, run adb shell cmd appops get <package> <op> and confirm it shows "ignore".
    On any other result, log it as failed, do not try another method, and move on to the next package. Do NOT stop to ask me in the middle of the pass. I want every approved change done first, and all questions at the end.
    The only reasons to stop early: the phone disconnects ("no devices", "device offline", "device not found"), or something suggests the phone itself is in trouble (it restarts on its own, or the screen goes black and stays black). Then stop, tell me, and wait.
@@ -398,7 +415,7 @@ Show one short summary in plain words:
 - how many changes worked, and
 - one line per failed item: app name, why it failed, and a suggested fallback.
 Fallbacks:
-- A refused uninstall of an A1 feed, an A2 ad app or a Group B app: "disable instead" (pm disable-user --user 0), unless it is rated Unsafe, is on the HARD DENYLIST, is "already off" (Phase 2), or was refused with "package is non-disable". Tested on OriginOS 6: com.vivo.magazine refused to uninstall but "pm disable-user" worked, and the lock screen then showed a normal wallpaper. Tested on Motorola / Android 17: 47 of the refused apps were disabled this way. Tested on Samsung One UI 9 / Android 17: all 71 refused apps, including Glance (com.samsung.android.dynamiclock), were disabled this way, and none turned itself back on after the restart.
+- A refused uninstall of an A1 feed, an A2 ad app or a Group B app: "disable instead" (pm disable-user --user 0; on SDK 21-22 "hide instead" with pm hide --user 0, because disabling needs root there), unless it is rated Unsafe, is on the HARD DENYLIST, is "already off" (Phase 2), or was refused with "package is non-disable". Tested on OriginOS 6: com.vivo.magazine refused to uninstall but "pm disable-user" worked, and the lock screen then showed a normal wallpaper. Tested on Motorola / Android 17: 47 of the refused apps were disabled this way. Tested on Samsung One UI 9 / Android 17: all 71 refused apps, including Glance (com.samsung.android.dynamiclock), were disabled this way, and none turned itself back on after the restart.
   In the summary, give three numbers: apps to disable now, apps that were already off (nothing to do), and apps protected by the phone (nothing possible). Say that disabling frees RAM but not storage.
 - An A4 store: no question. It was already muted automatically (see A4). Just report it as "muted instead".
 - A restriction or mute that the system undid: give the manual Settings steps.
@@ -462,7 +479,7 @@ Do NOT restart again. Use the restart from Phase 6:
      adb shell pm list packages -d     ->  packages_after_disabled.txt
      adb shell pm list packages -f -u  ->  packages_after_all.txt
 3. Compare packages_before.txt with packages_after.txt. Every package that disappeared must be in removal_log.csv with the result "Success". Name any package that disappeared without being in the log (for example an app I uninstalled on the phone myself during the session), and do not count it as removed by you. Tested on realme UI 7: one game disappeared that no command had removed.
-4. Check that every app disabled with the result "Success" in removal_log.csv is in packages_after_disabled.txt. An app that is no longer disabled was turned back on by the phone during the restart. Tested on Motorola / Android 17: com.glance.lockscreenM was "disabled-user" before the restart and enabled again after it, while the other 46 stayed disabled. Then stop and tell me (this is unexpected). Offer ONE retry of the same disable, which I already approved (rollback line first), and check again with adb shell pm list packages -d <package> after adb shell sleep 30. Do not restart again for this. Also give me the Settings steps to turn the feature off, because a setting I change myself sticks better. Save packages_after_disabled.txt again after the retry so the report uses the final count. Tested: the retry worked and Glance stayed off.
+4. Check that every app disabled with the result "Success" in removal_log.csv is in packages_after_disabled.txt (on SDK 21-22, check instead that every hidden app is still missing from packages_after.txt). An app that is no longer disabled was turned back on by the phone during the restart. Tested on Motorola / Android 17: com.glance.lockscreenM was "disabled-user" before the restart and enabled again after it, while the other 46 stayed disabled. Then stop and tell me (this is unexpected). Offer ONE retry of the same disable, which I already approved (rollback line first), and check again with adb shell pm list packages -d <package> after adb shell sleep 30. Do not restart again for this. Also give me the Settings steps to turn the feature off, because a setting I change myself sticks better. Save packages_after_disabled.txt again after the retry so the report uses the final count. Tested: the retry worked and Glance stayed off.
 
 Then write the final report in the chat AND save it as report.md. It MUST contain this table, filled only with measured numbers:
 
@@ -554,6 +571,7 @@ Read-only:
   adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
   adb shell dumpsys activity activities | adb shell dumpsys package preferred-activities   (Phase 2 fallbacks on older versions)
   adb shell getprop ro.config.low_ram
+  adb shell cmd package install-existing   (SDK 23-25 only, with NO package name: checks whether the restore command exists; changes nothing)
   adb shell sleep <seconds>
   adb shell am start -n com.heytap.market/com.oplus.market.setting.ExpSettingActivity   (Phase 6 step 6 only: opens App Market's settings screen; changes nothing by itself)
   adb shell am start -n com.vivo.appstore/.activity.SettingsActivity   (Phase 6 step 7 only: opens V-Appstore's settings screen; changes nothing by itself. The screen-reading, scroll, tap and home commands below are allowed in step 7 too, for the two named V-Appstore switches and their "Close" pop-up)
@@ -564,7 +582,8 @@ Read-only:
   adb shell pm list packages -d <package>   (check whether one package is still disabled)
 Changes (Phase 5 only, after my approval):
   adb shell pm uninstall --user 0 <package>
-  adb shell pm disable-user --user 0 <package>
+  adb shell pm disable-user --user 0 <package>   (SDK 23+)
+  adb shell pm hide --user 0 <package>           (SDK 21-22 only)
   adb shell cmd appops set <package> SYSTEM_ALERT_WINDOW ignore
   adb shell cmd appops set <package> POST_NOTIFICATION ignore
   adb shell cmd appops set <package> RUN_ANY_IN_BACKGROUND ignore
@@ -574,8 +593,8 @@ Changes (Phase 5 only, after my approval):
   adb shell pm set-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed   (A4 stores only)
   adb shell dumpsys package <package>   (read-only: check the notification permission)
 Restore:
-  adb shell cmd package install-existing --user 0 <package>
-  adb shell pm install-existing --user 0 <package>
+  adb shell cmd package install-existing --user 0 <package>   (SDK 26+, or SDK 23-25 if the probe found it)
+  adb shell pm unhide --user 0 <package>                      (SDK 21-22)
   adb shell pm enable --user 0 <package>
   adb shell cmd appops set <package> <op> <recorded mode>   (SDK 21-23: adb shell appops set <package> <op> <recorded mode>)
   adb shell pm clear-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed

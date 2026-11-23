@@ -240,11 +240,11 @@ Go to **Settings → Developer options** and turn off the switch at the top. Thi
 ```bash
 adb shell cmd package install-existing --user 0 com.example.package
 ```
-On Android 7 or older:
+On Android 5.x, preinstalled apps are hidden instead of uninstalled. To bring one back:
 ```bash
-adb shell pm install-existing --user 0 com.example.package
+adb shell pm unhide --user 0 com.example.package
 ```
-If an app was disabled instead of uninstalled:
+On Android 6 and 7, preinstalled apps are usually disabled instead of uninstalled, because these versions can't restore an uninstalled system app. If an app was disabled instead of uninstalled:
 ```bash
 adb shell pm enable --user 0 com.example.package
 ```
@@ -326,7 +326,7 @@ No root is needed, and it doesn't unlock the bootloader. It uses only standard A
 Mostly. System apps are removed for your user profile only, and the undo files restore them. Apps marked † in the list (preinstalled "downloaded" apps such as partner games) are deleted completely; you reinstall those from the Play Store if you want them back.
 
 **Which phones does it work on?**
-Android 5 and newer from any brand. On Android 17, the phone may refuse to uninstall any preinstalled system app without root (seen on a Motorola edge 70 fusion, a Samsung Galaxy M47 and an OPPO K14 5G). Those apps are disabled instead, which frees RAM but not storage; the storage freed on those phones (1.8–2.4 GB) came from uninstalling preinstalled partner apps and games. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
+Android 5 and newer from any brand. On Android 5 to 7, preinstalled system apps are disabled (Android 6–7) or hidden (Android 5) instead of uninstalled, so the undo file can always bring them back. On Android 17, the phone may refuse to uninstall any preinstalled system app without root (seen on a Motorola edge 70 fusion, a Samsung Galaxy M47 and an OPPO K14 5G). Those apps are disabled instead, which frees RAM but not storage; the storage freed on those phones (1.8–2.4 GB) came from uninstalling preinstalled partner apps and games. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
 
 ---
 
