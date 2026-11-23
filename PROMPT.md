@@ -41,6 +41,27 @@ HOW WE WORK
 - Restart the phone only ONCE, after all approved changes are applied (Phase 6). Frequent restarts are annoying. The only exceptions are if something breaks and must be undone, or if I approve more removals in Phase 8 (one restart per extra round).
 
 =====================================================================
+ANDROID VERSION DIFFERENCES (read before Phase 1; apply everywhere)
+=====================================================================
+This prompt must work on every Android version from 5 (SDK 21) to the newest. Read ro.build.version.sdk in Phase 1 and pick commands by SDK number, never by the marketing version name. If a command prints "not found", "Unknown command", "Error: unknown command" or only its help text, it is not on this version: use the fallback below, say so in one line, and continue. This is not a failure and not a reason to stop.
+  - "cmd" (cmd package, cmd appops, cmd role) exists only on SDK 24+ (Android 7+).
+      SDK 21-23: there is no "cmd". Use "pm install-existing" for restores, "pm list packages" for checks, and "appops get/set <package> <op>" without "cmd" for app-ops (if "appops" is not found either, skip app-op changes and give me the manual Settings steps instead).
+  - Restore after uninstall: SDK 26+ (Android 8+): adb shell cmd package install-existing --user 0 <package>
+                             SDK 21-25 (Android 5 to 7.1): adb shell pm install-existing --user 0 <package>
+    Write the one that matches this phone into the rollback files.
+  - "cmd package resolve-activity" exists only on SDK 24+; if "--brief" is rejected, run it again without "--brief" and read the package name from the output.
+  - "cmd role get-role-holders" exists only on SDK 29+ (Android 10+). Fallbacks for older phones are in Phase 2, step 2.
+  - "dumpsys webviewupdate" exists only on SDK 24+. On SDK 21-23 the WebView is com.google.android.webview or com.android.webview: keep both. On SDK 24-28 (Android 7 to 9), Google Chrome (com.android.chrome) is often the WebView itself: if the WebView output names Chrome, or you cannot tell, Chrome is PROTECTED.
+  - "cmd appops query-op" may not exist on older versions (it is missing on many SDK 24-28 phones). Use the A3 fallback.
+  - App-ops by SDK: SYSTEM_ALERT_WINDOW exists on all supported versions. RUN_IN_BACKGROUND needs SDK 24+. RUN_ANY_IN_BACKGROUND needs SDK 28+ (Android 9+). POST_NOTIFICATION and the POST_NOTIFICATIONS permission need SDK 33+ (Android 13+). Never run an op on a version that does not have it.
+  - "pm revoke" for runtime permissions needs SDK 23+. "pm set-permission-flags" / "pm clear-permission-flags" are used only on SDK 33+, where they exist.
+  - "adb shell df /data": on SDK 21-23 the output has columns "Size Used Free Blksize" with values like "25.3G" instead of 1K-blocks. Convert G/M/K to MB yourself (1G = 1024M), and say in the report that old Android rounds these numbers, so changes under about 100 MB cannot be measured there.
+  - "adb shell uptime" output differs by version (older phones print "up time: ..."). Always also read "adb shell cat /proc/uptime" (the first number is seconds since boot) and use that number for comparisons.
+  - "dumpsys meminfo": numbers may use "K", "kB" or commas (for example "2,857,568K"). Strip commas and convert to MB. If "Used RAM" or "Free RAM" lines are missing (some old or heavily modified skins), write "not measured" for them; the per-process PSS list ("Total PSS by process") is still enough for the main RAM number.
+  - "pm uninstall --user 0" on preinstalled apps: works without root on SDK 21-36 on most phones. On SDK 37+ (Android 17+) see Phase 1. Newer versions than this prompt knows about may behave like Android 17: if the first preinstalled uninstall is refused, treat the rest the same way (keep trying, offer "disable instead" at the end).
+  - Android Go edition (low-RAM phones, ro.config.low_ram = true): the "Go" Google apps (for example com.google.android.apps.searchlite, com.google.android.apps.nbu.files, com.android.launcher3 Go builds) may be the only Google, files or home app on the phone. Treat the home app and any app holding a PROTECTED role as protected as usual, and put Files Go in "Probably yours".
+
+=====================================================================
 PHASE 0: PREFLIGHT (read-only)
 =====================================================================
 1. Run: adb version
@@ -77,11 +98,14 @@ Run each of these. An empty result is normal and only means "not this skin":
   adb shell getprop ro.oxygen.version               (older OnePlus OxygenOS)
   adb shell getprop gsm.sim.operator.alpha          (mobile carrier)
   adb shell getprop gsm.operator.alpha              (carrier fallback; if both are empty or only ",", write "carrier: not reported")
+  adb shell getprop ro.config.low_ram               (true = Android Go edition)
   adb shell pm list users
   adb shell dumpsys device_policy
 
 Then:
-- If ro.build.version.sdk is below 21 (older than Android 5), stop: this process is not supported.
+- If ro.build.version.sdk is below 21 (Android 4.4 or older), stop: without root, ADB on these versions cannot remove an app for one user, so this process is not supported. Tell me I can still turn off most preinstalled apps by hand in Settings > Apps > (the app) > Disable.
+- If ro.build.version.sdk is empty or not a number, read ro.build.version.release and map it: 5.0=21, 5.1=22, 6=23, 7.0=24, 7.1=25, 8.0=26, 8.1=27, 9=28, 10=29, 11=30, 12=31, 12L=32, 13=33, 14=34, 15=35, 16=36, 17=37. If you still cannot tell, assume the OLDEST matching behaviour for every command choice (the fallbacks always work on newer versions too) and say so.
+- In the summary, name the SDK number and, in one plain line, which version-specific limits from "ANDROID VERSION DIFFERENCES" apply to this phone (for example "Android 6: app-store notifications must be turned off by hand in Settings").
 - If ro.build.version.sdk is 37 or higher (Android 17 or newer), tell me in the summary: "On Android 17 the phone may refuse to uninstall any preinstalled app without root. If that happens, I will offer to disable them instead. Disabling stops them running, but frees RAM, not storage." Tested on a Motorola edge 70 fusion / Android 17 (SDK 37): all 67 preinstalled-app uninstalls were refused with "Failure [only root can delete system app for a particular user]", while "pm disable-user --user 0" worked. Same on an OPPO K14 5G / ColorOS 17 / Android 17: all 31 preinstalled system apps were refused, the 22 downloaded-type apps (†) uninstalled, and "pm disable-user" worked for 29 of 33. Same on a Samsung SM-M476B / One UI 9 / Android 17: all 71 preinstalled system apps were refused the same way, only the 14 downloaded-type apps (†) uninstalled, and "pm disable-user" worked for all 71, which stayed disabled after the restart.
 - If dumpsys device_policy shows a Device Owner or Profile Owner (a work- or school-managed phone), stop and tell me to ask my IT department instead.
 - Only ever touch user 0 (the main user). Leave other users and profiles alone, such as Samsung Secure Folder (often user 150), Dual Messenger (95), or Xiaomi Second Space/Dual Apps (999).
@@ -105,15 +129,21 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
 
 2. Find the apps that currently fill an essential role. These are PROTECTED and must never be removed or restricted:
      Home screen:   adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
+                    (SDK 21-23, or if it fails: adb shell dumpsys activity activities, and take the package of the home task:
+                     "Stack #0" on Android 5-8, or the task marked type=home / mActivityType=home / isHomeActivity on newer)
      Keyboard:      adb shell settings get secure default_input_method
-     Dialer:        adb shell cmd role get-role-holders android.app.role.DIALER     (Android 10+; on older: adb shell telecom get-default-dialer)
-     SMS:           adb shell cmd role get-role-holders android.app.role.SMS
-     Browser:       adb shell cmd role get-role-holders android.app.role.BROWSER
-     Assistant:     adb shell cmd role get-role-holders android.app.role.ASSISTANT
+     Dialer:        adb shell cmd role get-role-holders android.app.role.DIALER     (SDK 29+)
+                    SDK 23-28: adb shell telecom get-default-dialer, or adb shell settings get secure dialer_default_application
+                    SDK 21-22: no command; protect every package whose name contains "dialer", "contacts", "incallui" or "telecom"
+     SMS:           adb shell cmd role get-role-holders android.app.role.SMS        (SDK 29+; older: adb shell settings get secure sms_default_application)
+     Browser:       adb shell cmd role get-role-holders android.app.role.BROWSER    (SDK 29+; older: adb shell dumpsys package preferred-activities,
+                    and treat every package set as a default there as PROTECTED; Chrome is always protected on SDK 24-28, see WebView)
+     Assistant:     adb shell cmd role get-role-holders android.app.role.ASSISTANT  (SDK 29+; older: adb shell settings get secure assistant
+                    and adb shell settings get secure voice_interaction_service)
      Accessibility: adb shell settings get secure enabled_accessibility_services
-     WebView:       adb shell dumpsys webviewupdate        (note the "Current WebView package")
+     WebView:       adb shell dumpsys webviewupdate        (SDK 24+; note the "Current WebView package". SDK 21-23: see ANDROID VERSION DIFFERENCES)
      Device admins: from the dumpsys device_policy output in Phase 1
-   If a command is not supported on this Android version, say so and continue.
+   If a command is not supported on this Android version, use the fallback, say so in one line and continue. If no fallback gives an answer for a role, protect every installed app that could fill it (by name or UAD-ng description), rather than guessing.
 
 3. Storage details, captured now because removed apps disappear from these outputs later:
      adb shell dumpsys diskstats   ->  diskstats_before.txt
@@ -181,7 +211,7 @@ ColorOS 17 (OPPO / realme / OnePlus, Android 17) note for A3 and A4: "cmd appops
 
 A3. "Display over other apps" pop-ups. Run:
      adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
-   (If this is not supported on this Android version, say so and skip A3.)
+   If query-op is not supported (common on SDK 24-28), do not skip A3: instead run adb shell cmd appops get <package> SYSTEM_ALERT_WINDOW (on SDK 21-23: adb shell appops get <package> SYSTEM_ALERT_WINDOW) for each installed user-facing, non-protected app that is not already being uninstalled, and treat "allow" as allowed. If neither command exists, say so and skip A3.
    List every app allowed to draw over other apps that is NOT protected, NOT an accessibility service, and NOT a messaging, screen-recorder, floating-calculator, floating-notes, or video-player app I might use on purpose. Suggest restricting the rest, but only user-facing apps (ones with their own app icon, such as weather, music, cleaner, games hub or app store).
    This list is usually long and is mostly system services that need pop-ups to work: the in-call screen, battery manager, security center, permission dialogs, SystemUI, Settings, updaters, Find My Device, account and sync services, casting, and OEM frameworks (for example com.android.incallui, com.miui.powerkeeper, com.miui.securitycore, com.xiaomi.xmsf). Never restrict these. Name them in the review as "kept on purpose" so I can see you checked them.
    A store that A4 mutes (not uninstalls) still goes in A3 if it may draw over other apps. Tested on Samsung One UI 9 / Android 17: Galaxy Store had SYSTEM_ALERT_WINDOW "allow", and restricting it to "ignore" stuck.
@@ -208,7 +238,7 @@ A4. Preinstalled app stores that are not Google Play. Never touch com.android.ve
           rollback lines (only if it was granted=true before): adb shell pm clear-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed
                                                               adb shell pm grant <package> android.permission.POST_NOTIFICATIONS
         Tested on a vivo T5 / OriginOS 6 / Android 16 with com.vivo.appstore: granted went from true to false, flags showed USER_SET|USER_FIXED, and the POST_NOTIFICATION app-op became "ignore". This works where "cmd appops set ... POST_NOTIFICATION ignore" alone was undone by the system (see below). If pm revoke fails, log it and give me the manual Settings steps.
-     2. For each of these app-ops: POST_NOTIFICATION (Android 13+ only; after step 1 it normally already reads "ignore"), RUN_ANY_IN_BACKGROUND, RUN_IN_BACKGROUND
+     2. For each of these app-ops: POST_NOTIFICATION (SDK 33+ only; after step 1 it normally already reads "ignore"), RUN_ANY_IN_BACKGROUND (SDK 28+ only), RUN_IN_BACKGROUND (SDK 24+ only). On SDK 21-23 none of these exist: Mute means only the manual Settings steps below (notifications off, and "Restrict background data" in Settings > Apps > <store> > Data usage), listed in the final report.
        first record the current mode: adb shell cmd appops get <package> <op>
        then:                          adb shell cmd appops set <package> <op> ignore
      If an op is not supported on this phone, say so and skip that op.
@@ -269,7 +299,7 @@ Never uninstall, disable or restrict these, even if a list says they are safe:
 - Anything rated "Unsafe" in UAD-ng (except the "Restrict" or "Mute" actions in A1 and A4).
 - Anything you cannot identify.
 - Core Android: android, com.android.systemui, com.android.settings, com.android.shell, com.android.phone, com.android.server.telecom, com.android.providers.* , com.android.packageinstaller, com.google.android.packageinstaller, com.android.permissioncontroller, com.google.android.permissioncontroller, com.android.networkstack*, com.google.android.networkstack*, com.android.wifi*, com.android.bluetooth, com.android.nfc, com.android.se, com.android.location.fused, com.android.externalstorage, com.android.documentsui, com.google.android.documentsui, com.android.mtp, com.android.inputdevices, com.android.keychain, com.android.certinstaller, com.android.vpndialogs, com.android.captiveportallogin, com.android.extservices, com.google.android.ext.services, com.android.modulemetadata, com.google.android.modulemetadata, com.android.carrierconfig, com.android.provision.
-- Google core: com.google.android.gms, com.google.android.gsf, com.android.vending (Play Store), com.google.android.webview, com.google.android.trichromelibrary*, com.google.android.setupwizard.
+- Google core: com.google.android.gms, com.google.android.gsf, com.android.vending (Play Store), com.google.android.webview, com.android.webview, com.google.android.trichromelibrary*, com.google.android.setupwizard. On SDK 24-28, also com.android.chrome when it is (or may be) the WebView provider.
 - Any package with a name part that starts or ends with one of these words. Split the package name on "." and "_", ignore letter case, and check each part:
     ims, telephony, cellbroadcast (emergency alerts), emergency, sos, overlay, rro, framework, setupwizard, provision, updater, ota, fota, systemupdate, biometric, fingerprint, faceunlock, facerecognition, camera, keyguard, lockscreen, mediaprovider, securitycenter, knox, findmy
   Examples: com.android.cellbroadcastreceiver, com.oem.ota_client and com.android.systemuioverlay are protected. com.facebook.katana and com.oem.rotation are not, because "facebook" and "rotation" do not start or end with a listed word.
@@ -325,13 +355,13 @@ If you cannot write files, show me the full content of each file at the end so I
 
 For EACH approved package, in this exact order:
 1. FIRST add its restore command(s) to both rollback files. Insert them directly below the header lines of each file (the first line, plus the "set ADB" lines from Phase 0), not at the end, so the files undo the newest change first:
-     uninstalled:          adb shell cmd package install-existing --user 0 <package>
-                           (on Android 7 or older: adb shell pm install-existing --user 0 <package>)
+     uninstalled:          adb shell cmd package install-existing --user 0 <package>   (SDK 26+)
+                           (SDK 21-25, Android 5 to 7.1: adb shell pm install-existing --user 0 <package>)
      disabled:             adb shell pm enable --user 0 <package>
                            (ONLY if the package was NOT in packages_before_disabled.txt. Never add an enable line
                             for an app that was already off before the session: the undo file would turn it on.)
      restricted or muted:  adb shell cmd appops set <package> <op> <the mode you recorded before>
-                           (one line per op you changed)
+                           (one line per op you changed; on SDK 21-23 write "appops set" without "cmd")
 2. THEN make the change:
      uninstall:  adb shell pm uninstall --user 0 <package>
                  (no -k flag, so the app's data and cache are deleted and the storage is actually freed;
@@ -339,10 +369,11 @@ For EACH approved package, in this exact order:
                   downloaded-type app (marked † in Phase 4) is deleted completely and must be reinstalled from the Play Store)
      disable:    adb shell pm disable-user --user 0 <package>
      restrict:   adb shell cmd appops set <package> SYSTEM_ALERT_WINDOW ignore
-     mute:       adb shell cmd appops set <package> <op> ignore   (for each op in A4)
+     mute:       adb shell cmd appops set <package> <op> ignore   (for each op in A4 that exists on this SDK)
+     (SDK 21-23: "appops set" / "appops get" without "cmd", everywhere in this phase.)
 3. Check the result:
      uninstall must print "Success".
-     disable must print "new state: disabled-user".
+     disable must print "new state: disabled-user" (older versions print it as "Package <package> new state: disabled-user"; both are success).
      For restrict and mute, run adb shell cmd appops get <package> <op> and confirm it shows "ignore".
    On any other result, log it as failed, do not try another method, and move on to the next package. Do NOT stop to ask me in the middle of the pass. I want every approved change done first, and all questions at the end.
    The only reasons to stop early: the phone disconnects ("no devices", "device offline", "device not found"), or something suggests the phone itself is in trouble (it restarts on its own, or the screen goes black and stays black). Then stop, tell me, and wait.
@@ -519,8 +550,10 @@ Read-only:
   adb shell cmd role get-role-holders ... | adb shell telecom get-default-dialer
   adb shell dumpsys device_policy | webviewupdate | meminfo | battery | diskstats
   adb shell df /data
-  adb shell cmd appops get <package> <op>
+  adb shell cmd appops get <package> <op>   (SDK 21-23: adb shell appops get <package> <op>)
   adb shell cmd appops query-op SYSTEM_ALERT_WINDOW allow
+  adb shell dumpsys activity activities | adb shell dumpsys package preferred-activities   (Phase 2 fallbacks on older versions)
+  adb shell getprop ro.config.low_ram
   adb shell sleep <seconds>
   adb shell am start -n com.heytap.market/com.oplus.market.setting.ExpSettingActivity   (Phase 6 step 6 only: opens App Market's settings screen; changes nothing by itself)
   adb shell am start -n com.vivo.appstore/.activity.SettingsActivity   (Phase 6 step 7 only: opens V-Appstore's settings screen; changes nothing by itself. The screen-reading, scroll, tap and home commands below are allowed in step 7 too, for the two named V-Appstore switches and their "Close" pop-up)
@@ -536,6 +569,7 @@ Changes (Phase 5 only, after my approval):
   adb shell cmd appops set <package> POST_NOTIFICATION ignore
   adb shell cmd appops set <package> RUN_ANY_IN_BACKGROUND ignore
   adb shell cmd appops set <package> RUN_IN_BACKGROUND ignore
+  (SDK 21-23: the same "appops set" lines without "cmd", only for ops that exist on that version)
   adb shell pm revoke <package> android.permission.POST_NOTIFICATIONS   (A4 stores only)
   adb shell pm set-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed   (A4 stores only)
   adb shell dumpsys package <package>   (read-only: check the notification permission)
@@ -543,7 +577,7 @@ Restore:
   adb shell cmd package install-existing --user 0 <package>
   adb shell pm install-existing --user 0 <package>
   adb shell pm enable --user 0 <package>
-  adb shell cmd appops set <package> <op> <recorded mode>
+  adb shell cmd appops set <package> <op> <recorded mode>   (SDK 21-23: adb shell appops set <package> <op> <recorded mode>)
   adb shell pm clear-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed
   adb shell pm grant <package> android.permission.POST_NOTIFICATIONS
 Other:
