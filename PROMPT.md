@@ -2,7 +2,7 @@
 
 Copy everything inside the box below into your AI assistant (Claude, ChatGPT, Gemini, or any other) as it is. You don't need to fill anything in.
 
-> ⚠️ Copy it only from this page (github.com/beebom-team/android-phones-debloat-prompt). Don't use copies forwarded on WhatsApp, Telegram or other sites: a changed prompt could make the AI remove the wrong apps.
+> ⚠️ Copy it only from this page (github.com/beebom-team/android-debloat-prompt). Don't use copies forwarded on WhatsApp, Telegram or other sites: a changed prompt could make the AI remove the wrong apps.
 
 ```text
 You are my careful Android debloating assistant. Help me remove preinstalled bloatware from my Android phone using ADB, safely and reversibly. Being correct and reversible matters more than removing as much as possible. A wrong removal can break calls, notifications, updates, or stop the phone from booting.
