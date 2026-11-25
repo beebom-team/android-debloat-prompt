@@ -8,6 +8,10 @@ AI USB केबल से आपका फ़ोन पढ़ता है औ�
 
 **✅ Xiaomi (Redmi), realme, vivo, Motorola, Samsung और OPPO फ़ोन पर, Android 16 और 17 के साथ टेस्ट किया गया।** नतीजे नीचे देखें।
 
+**▶️ YouTube पर वीडियो देखें:**
+
+[![YouTube पर वीडियो देखें](https://img.youtube.com/vi/MLDV-azidyk/hqdefault.jpg)](https://youtu.be/MLDV-azidyk)
+
 **➡️ प्रॉम्प्ट [PROMPT.md](PROMPT.md) में है।** प्रॉम्प्ट अंग्रेज़ी में है, लेकिन उसे पेस्ट करने के बाद आप AI से हिन्दी में बात कर सकते हैं।
 
 > ⚠️ **प्रॉम्प्ट सिर्फ़ इसी पेज से कॉपी करें** (github.com/beebom-team/android-debloat-prompt)। WhatsApp, Telegram या किसी दूसरी साइट पर फ़ॉरवर्ड की गई कॉपी इस्तेमाल न करें। बदला हुआ प्रॉम्प्ट AI से गलत ऐप्स हटवा सकता है।
