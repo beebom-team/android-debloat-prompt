@@ -73,7 +73,7 @@ It is designed to be as safe as possible, but no tool can promise it works on ev
 - **Preinstalled partner apps and games do count as bloatware**, for example Candy Crush, Block Blast, GOGO Blast, Dailyhunt, Josh, ShareChat, Moj, Facebook, Instagram, Spotify, Snapchat, LinkedIn, ChatGPT, Amazon, Flipkart, Meesho, JioHotstar, a preinstalled Paytm or PhonePe, and every preloaded loan app. They are in "Recommended" and marked †, so you can leave out any you use.
 - **You approve every removal.** The AI stops and shows you a table first.
 - **An undo file is written first.** Before each removal, the AI adds the restore command to `rollback.bat` (Windows) and `rollback.sh` (Mac/Linux).
-- **Important apps are protected.** The AI is told never to touch your dialer, SMS app, keyboard, home screen, Play Store, Google Play services, camera, emergency alerts, security, or system update components.
+- **Important apps are protected.** The AI is told never to touch your dialer, SMS app, keyboard, home screen, Play Store, Google Play services, camera, gallery, emergency alerts, security, or system update components.
 - **Numbers are measured, not guessed.** The AI must take every number in the report from a command it ran, or say "not measured".
 - **Only one restart.** The AI applies everything you approved, then restarts the phone once at the end and asks you to test calls, SMS, camera and other basics. If something broke, it undoes the newest group first.
 
@@ -208,6 +208,7 @@ When every approved change is done, the AI restarts the phone once. Unlock it, t
 - [ ] Mobile data and Wi-Fi
 - [ ] Bluetooth
 - [ ] Camera (photo and video)
+- [ ] Gallery opens and shows your photos
 - [ ] Notifications from a messaging app
 - [ ] Play Store opens and updates an app
 - [ ] Alarms
@@ -326,11 +327,17 @@ No, not unless you name the app yourself. Banking, government and mobile-operato
 **Does it need root, or does it void my warranty?**
 No root is needed, and it doesn't unlock the bootloader. It uses only standard ADB commands.
 
+**Does the AI get root or full control of my phone?**
+No. ADB runs as a limited "shell" user, not as root, so it can't read other apps' private data, such as your chats, banking apps or passwords. The prompt only lets the AI run a fixed list of commands that read basic phone details, list apps, and measure storage, RAM and battery (see [Privacy](#privacy)), and nothing on the phone changes until you approve the list. With a chat AI (Option B) you run every command yourself, so you see each one first. Removing system apps is still never risk-free: back up first (Step 1) and read the list carefully before you approve it.
+
+**Do I need a paid AI subscription?**
+No. Option B works with the free versions of ChatGPT, Claude.ai and Gemini. On a free plan, a long session can hit the message limit; if it does, continue later in the same chat. Some tools that run the commands themselves (Option A) need a paid plan, for example Claude Code, so check the tool's own pricing.
+
 **Is it reversible?**
 Mostly. System apps are removed for your user profile only, and the undo files restore them. Apps marked † in the list (preinstalled "downloaded" apps such as partner games) are deleted completely; you reinstall those from the Play Store if you want them back.
 
 **Which phones does it work on?**
-Android 5 and newer from any brand. On Android 5 to 7, preinstalled system apps are disabled (Android 6–7) or hidden (Android 5) instead of uninstalled, so the undo file can always bring them back. On Android 17, the phone may refuse to uninstall any preinstalled system app without root (seen on a Motorola edge 70 fusion, a Samsung Galaxy M47 and an OPPO K14 5G). Those apps are disabled instead, which frees RAM but not storage; the storage freed on those phones (1.8–2.4 GB) came from uninstalling preinstalled partner apps and games. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps.
+Android 5 and newer from any brand. On Android 5 to 7, preinstalled system apps are disabled (Android 6–7) or hidden (Android 5) instead of uninstalled, so the undo file can always bring them back. On Android 17, the phone may refuse to uninstall any preinstalled system app without root (seen on a Motorola edge 70 fusion, a Samsung Galaxy M47 and an OPPO K14 5G). Those apps are disabled instead, which frees RAM but not storage; the storage freed on those phones (1.8–2.4 GB) came from uninstalling preinstalled partner apps and games. The prompt detects Samsung One UI, Xiaomi MIUI/HyperOS, OPPO ColorOS, realme UI, OnePlus OxygenOS, vivo Funtouch/OriginOS, Huawei EMUI and Honor MagicOS, and uses brand-specific knowledge where the UAD-ng list has gaps. It hasn't been tested on OnePlus, Nothing or Pixel phones yet (Pixel and Nothing phones come with very little bloatware anyway). If you try it on one, please [report your phone](#report-your-phone).
 
 ---
 
