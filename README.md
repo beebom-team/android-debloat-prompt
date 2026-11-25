@@ -8,6 +8,10 @@ The AI reads your phone over a USB cable and checks every app against the commun
 
 **✅ Tested on Xiaomi (Redmi), realme, vivo, Motorola, Samsung and OPPO phones, on Android 16 and 17.** [See the results](#what-it-does-by-default).
 
+**▶️ Watch the video walkthrough on YouTube:**
+
+[![Watch the video on YouTube](https://img.youtube.com/vi/MLDV-azidyk/hqdefault.jpg)](https://youtu.be/MLDV-azidyk)
+
 **➡️ The prompt is in [PROMPT.md](PROMPT.md).**
 
 > ⚠️ **Copy the prompt only from this page** (github.com/beebom-team/android-debloat-prompt). Don't use copies forwarded on WhatsApp, Telegram or other sites. A changed prompt could make the AI remove the wrong apps.
