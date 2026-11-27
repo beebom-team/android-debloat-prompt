@@ -14,6 +14,8 @@ The AI reads your phone over a USB cable and checks every app against the commun
 
 **➡️ The prompt is in [PROMPT.md](PROMPT.md).**
 
+🧪 **Experimental:** [PROMPT_v2.md](PROMPT_v2.md) is a shorter, community-contributed version that shows one clickable review page with checkboxes instead of a text list. It has been tested on fewer phones (vivo and Motorola) than PROMPT.md; if you're unsure, use PROMPT.md.
+
 > ⚠️ **Copy the prompt only from this page** (github.com/beebom-team/android-debloat-prompt). Don't use copies forwarded on WhatsApp, Telegram or other sites. A changed prompt could make the AI remove the wrong apps.
 
 ### Quick start
@@ -27,13 +29,15 @@ The AI reads your phone over a USB cable and checks every app against the commun
 
 ## What it does by default
 
-The first three are pre-selected on every phone, and you confirm them once with a single reply ("go"). Bloatware removal is shown as a list for you to pick from:
+The first three are pre-selected on every phone (the two optional rows never are), and you confirm them once with a single reply ("go"). Bloatware removal is shown as a list for you to pick from:
 
 | | What | How |
 |---|---|---|
 | 🔒 | **Removes Glance and lock-screen "stories" feeds** on every brand: Glance on Samsung, Xiaomi, Motorola, Nothing and others; Lock Screen Magazine on OPPO, realme and OnePlus; vivo Magazine; Wallpaper Carousel; Huawei/Honor Magazine; Tecno/Infinix feeds | Uninstalls them. If the feed is built into the lock screen itself (some OPPO/realme/OnePlus phones), it blocks the feed instead and shows you the exact switch to turn it off in Settings |
 | 🚫 | **Stops ad pop-ups** | Removes ad services (for example Xiaomi MSA, App Vault, AppCloud, Digital Turbine), and blocks "display over other apps" for apps that shouldn't have it |
 | 🔕 | **Silences preinstalled app stores** that aren't Google Play (Indus Appstore, GetApps, Galaxy Store, App Market, vivo App Store and others) | Removes the store where it's safe to. Where the phone needs it (for example Samsung Pay needs Galaxy Store, or a phone without Google Play), it turns off the store's notifications and background activity instead |
+| 💤 | **Optional: stops rarely used apps running in the background** (for example a second operator app, food, shopping or travel apps) | They stay installed and open normally; they just can't wake up in the background. Also used when the phone refuses to remove or disable an app (tested on vivo). Never pre-selected |
+| ⚡ | **Optional: speeds up app launches** | Runs Android's own app-optimization job now instead of waiting for the night, with launch times measured before and after. Never pre-selected |
 | 🧹 | **Removes bloatware**: preinstalled apps you don't need, such as duplicate OEM apps (browser, music, video, themes), Facebook and other partner apps (for example Dailyhunt, Josh, ShareChat, Moj, Amazon, Paytm, PhonePe and preloaded loan apps), preinstalled games, the apps that fill "Games" / "Hot Apps" folders with ads, and trackers | Lists every one with a plain-English description and a risk level (Recommended, Advanced, Expert), checked against the [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) community list. You pick what goes, for example `go + all Recommended`. Expert apps are only disabled, never uninstalled |
 
 At the end, the AI gives you a **before/after report** with measured numbers. Results from the phones we tested:
@@ -43,6 +47,7 @@ At the end, the AI gives you a **before/after report** with measured numbers. Re
 | REDMI Note 17 | 76 / 0 | 468 MB | 1.6 GB |
 | realme P4R | 75 / 0 | 103 MB | 3.7 GB |
 | vivo T5 | 75 / 1 | 370 MB | 4.6 GB |
+| vivo V2356 (vOS 7) | 57 / 1 (+18 stopped in background) | 159 MB | 1.9 GB |
 | moto edge 70 fusion | 5 / 48 | 420 MB | 2.0 GB |
 | Samsung Galaxy M47 | 17 / 71 | 277 MB | 1.8 GB |
 | OPPO K14 5G | 22 / 29 | 276 MB | 2.4 GB |
@@ -185,18 +190,21 @@ The AI measures the phone first (the "before" numbers), without restarting it. T
 | **Recommended** | Other bloatware that's safe for almost everyone | You choose |
 | **Advanced** | Features some people use | You choose; read each one |
 | **Expert** | Can break things; only disabled, never uninstalled | Skip unless you know you don't need it |
+| **Group C** | Apps that stay installed but stop running in the background (C1, C2 ...) | You choose |
+| **Optimize** | O1: optimize apps now; O2: speed-compile apps you name as laggy | You choose |
 
 Reply with exactly what to apply, for example:
 - `go` applies Group A only
 - `go, except A3 and A7` applies Group A without those two items
 - `go + all Recommended`
 - `go + Recommended except 4 and 9`
+- `go + all Recommended + C1-C4 + O1, if refused: restrict`
 
 You can also approve a whole heading, for example `go + Recommended, Tracking and logs`. Each app is shown as one short line with its everyday name and what you'd lose. The technical package names are saved in `review.md` if you want to look them up.
 
 The AI will not change anything you didn't approve.
 
-While the AI applies your changes, it doesn't stop to ask you anything. If the phone refuses to remove an app, the AI logs it and keeps going; a refused app store is muted automatically. When everything has been tried, it shows a short summary and asks you **once** whether to disable the refused apps instead.
+While the AI applies your changes, it doesn't stop to ask you anything. If the phone refuses to remove an app, the AI logs it and keeps going; a refused app store is muted automatically. When everything has been tried, it shows a short summary and asks you **once** whether to disable the refused apps instead (or, where the phone refuses that too, stop them running in the background). To skip that question, decide up front by adding `if refused: disable`, `if refused: restrict` or `if refused: leave` to your reply.
 
 ### Step 6: Test after the restart
 When every approved change is done, the AI restarts the phone once. Unlock it, then check:
@@ -223,6 +231,7 @@ When everything works, the AI measures the phone again (no extra restart) and gi
 - **Storage freed:** measured on the phone (an estimate per app is added only on phones that record app sizes; none of the 6 tested phones did)
 - **RAM freed:** the RAM the removed apps were using, plus the whole-phone before/after change (with a note that part of that change comes from the restart)
 - **What happened to Glance and each app store,** and how to turn off anything that could only be blocked
+- **App launch times** before and after, if you chose Optimize, and any app that was found hogging the processor or heating the phone
 - **Ad switches you must turn off yourself:** some ads come from apps that have to stay, such as Xiaomi's Security and Themes apps or realme's "Hot Apps" folders. The report gives you the exact switches in Settings
 
 Storage freed is often smaller than people expect. Preinstalled apps live on a read-only part of the phone, so only their updates, data and cache can be freed. The report explains this.
@@ -273,6 +282,8 @@ If an app store was muted, or an app's pop-ups were blocked, the exact restore l
 | `df_before.txt` / `df_after.txt` | Storage readings |
 | `diskstats_before.txt` | Storage readings before removal. Some phones also list each app's size here; all 6 tested phones only recorded totals |
 | `battery_before.txt` | Battery level and temperature |
+| `top_before.txt` / `thermal_before.txt` / `cpufreq_before.txt` | Which apps were using the processor, the phone's heat status and CPU speeds |
+| `dexopt_before.txt` / `launch_before.txt` / `launch_after.txt` | How many apps were optimized, and app launch times (only if you chose Optimize) |
 
 Keep the folder. Your undo files are in it.
 
@@ -292,7 +303,12 @@ Keep the folder. Your undo files are in it.
 | Many vivo / iQOO apps are refused (OriginOS) | On a tested OriginOS 6 phone, 15 of vivo's own apps were refused (for example V-Appstore, Jovi, vivoCloud, App Clone, Floating ball, Smart Vision). Nothing broke. The AI offers to disable them instead; the vivo Lock Screen Poster could be disabled this way |
 | `Failure [only root can delete system app for a particular user]` (Android 17) | On a tested Motorola edge 70 fusion, Samsung Galaxy M47 and OPPO K14 5G, all with Android 17, every preinstalled system app was refused this way; only preinstalled partner apps (marked †) could be uninstalled. Nothing broke. The AI offers to disable the rest instead. Disabled apps can't run, show ads or send notifications, so you get the RAM back but not the storage |
 | `Failure: package is non-disable` | The phone protects this app from being removed or disabled (tested on Motorola). Nothing broke. If it sends notifications, long-press one and turn them off |
-| `Shell cannot change component state for null to 3` | The app was already disabled before you started. Nothing to do |
+| `Shell cannot change component state for null to 3` | Two possible causes, both harmless: the app was already disabled before you started (nothing to do), or the phone protects it from being disabled (seen on Samsung One UI 8 / Android 16 with AR Emoji and Samsung Free, which were not disabled before). In the second case the AI offers to stop it running in the background instead |
+| `Cannot disable <app> no root permission` or `Cannot suspend <app>, no root permission` (vivo vOS / OriginOS) | The phone refuses to remove **and** to disable some of vivo's own apps (on a tested vivo V2356 with vOS 7, 18 apps such as vivo push service, Global search, Jovi, Floating ball and Game watch). Nothing broke. The AI stops them running in the background instead, which worked on all 18 |
+| An app you removed still shows up in the app list (App Clone, Dual Apps, Second Space, Secure Folder, Private Space) | That's the copy in the other profile. The prompt counts only your main profile (`pm list packages --user 0`), so its numbers are correct |
+| V-Appstore's settings screen won't open from the computer (vivo vOS 7) | On vOS 7 that screen can't be opened by ADB. The AI opens V-Appstore through its icon instead, or asks you to switch off **"Create Apps on the home screen"** and **"Create Games on the home screen"** in V-Appstore → Manage → ⚙️ |
+| Animations reset to 1x after turning off Developer options | Many phones (tested: vivo) reset the Developer options animation speeds. Use **Settings → Accessibility → Remove animations** instead; it stays on |
+| The phone is hot or slow even after debloating | The AI takes a snapshot of which apps are using the processor and the phone's heat status. An app stuck in the background (on a tested Samsung Galaxy A33, Link to Windows used 50–144% CPU and slowed the processor down) is listed under "Busy in the background", and you can remove it or stop it running in the background. The optional Optimize step can also make apps open faster |
 | The AI can't find an app by the name shown on the phone | Some preinstalled apps use random-looking package names (on a tested vivo phone, "Axe Ace" and "EVO" were `com.kncbetru.weryu` and `com.lgzddt.sk.yfv.opcyzl.bitjiz`). The AI narrows it down by elimination and asks you to confirm. To check yourself: **Settings → Apps → (the app) → App details** opens its Play Store page, and the address contains the package name |
 | An app store still sends notifications after it was muted | On Android 13 and newer, the phone can undo the notification block right away. Turn it off by hand: **Settings → Apps → (the store) → Notifications** |
 | My bank or UPI app won't open and mentions Developer options, USB debugging or an "unsafe device" | That's the app's own security check, not damage from debloating. Turn off Developer options ([Step 8](#step-8-turn-off-usb-debugging)) and open the app again |
@@ -310,7 +326,7 @@ Keep the folder. Your undo files are in it.
 ## FAQ
 
 **Will this make my phone faster?**
-It usually helps privacy, storage and battery more than speed, and it removes lock-screen ads and nagging notifications. On a newer phone the difference in speed is often small. The report shows measured before/after numbers so you can see for yourself.
+It usually helps privacy, storage and battery more than speed, and it removes lock-screen ads and nagging notifications. On a newer phone the difference in speed is often small. The report shows measured before/after numbers so you can see for yourself. If you choose the optional **Optimize** step, the AI runs Android's own overnight app-optimization job right away and measures app launch times before and after (on a tested vivo V2356, Chrome opened 17% faster and YouTube 32% faster). For apps that still stutter, it can speed-compile a few apps you name; Android returns them to normal when they update.
 
 **Glance came back, or my lock screen still shows stories. Why?**
 On some phones the feed is built into the lock screen and can't be removed safely, so the AI blocks it and gives you the Settings switch to turn it off. On a tested Motorola phone with Android 17, Glance could only be disabled, and it turned itself back on after the restart. The AI checks for this after the restart, disables it once more, and gives you the Settings switch. Turning it off in Settings yourself sticks best. A big system update can also reinstall Glance. Run the prompt again after updates.

@@ -31,7 +31,10 @@ HOW WE WORK
   - In a double-quoted string, "$p:" is read as a drive variable and fails. Write $p + ':' instead.
   - Write rollback.bat, rollback.sh and removal_log.csv as UTF-8 WITHOUT a byte-order mark, for example [IO.File]::WriteAllText(path, text, (New-Object System.Text.UTF8Encoding($false))). Out-File and Set-Content in 5.1 can add a BOM, and a BOM before "@echo off" breaks the batch file. Write rollback.sh with LF line endings.
   - Numbers are formatted with the PC's region settings: an Indian-English PC prints 105798 as 1,05,798. Format report numbers with the invariant culture, for example $n.ToString('N0', [Globalization.CultureInfo]::InvariantCulture).
+  - Quoting: when an adb shell command contains spaces, commas, quotes, "$", "*" or "|", pass the WHOLE phone-side command as one quoted string, for example adb shell "top -b -n 1 -m 10" or adb shell "cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq". cmd.exe and PowerShell otherwise strip or split the inner quotes, and the phone receives a different value than you meant. (Reported on a Samsung Galaxy A33 / One UI 8: a value written as "0, 0" without outer quotes arrived as "0,," and made system_server crash and soft-reboot the phone. This prompt never runs settings put, but the same quoting rule protects every other command.) In .bat files, also double every "%" that should reach the phone.
   - Always read the output of every change command, including "cmd appops set", "pm revoke" and "pm set-permission-flags". They print nothing when they work, but on some skins they print a SecurityException. Write the exact error text into removal_log.csv.
+- adb sometimes prints its own startup lines first ("* daemon not running; starting now at tcp:5037", "* daemon started successfully"). They are not part of the phone's answer: ignore them when you read a result or count lines in a file, and never treat them as a failure.
+- Every "pm list packages" command in this prompt is run with "--user 0" (for example adb shell pm list packages --user 0 -s). Without it, phones with App Clone, Dual Apps, Second Space, Secure Folder or Private Space also list apps from those profiles: an app you removed for user 0 still shows up, and the counts are wrong. Tested on vivo V2356 / vOS 7 / Android 16 (App Clone, user 999): a removed app still appeared in plain "pm list packages", while "pm list packages --user 0" was correct.
 - Privacy: "pm list users" shows the phone owner's name, and "adb devices" shows the phone's serial number. Do not repeat either in the chat, in report.md or in any file you share.
 - Use only the commands in the ALLOWED COMMANDS section at the end. Never use root, never flash anything, never touch the bootloader, never run pm clear, rm, settings put, adb install, or any pm uninstall without --user 0.
 - Never guess. If you are not sure what a package does, call it "unknown" and keep it.
@@ -64,6 +67,9 @@ This prompt must work on every Android version from 5 (SDK 21) to the newest. Re
   - "dumpsys webviewupdate" exists only on SDK 24+. On SDK 21-23 the WebView is com.google.android.webview or com.android.webview: keep both. On SDK 24-28 (Android 7 to 9), Google Chrome (com.android.chrome) is often the WebView itself: if the WebView output names Chrome, or you cannot tell, Chrome is PROTECTED.
   - "cmd appops query-op" may not exist on older versions (it is missing on many SDK 24-28 phones). Use the A3 fallback.
   - App-ops by SDK: SYSTEM_ALERT_WINDOW exists on all supported versions. RUN_IN_BACKGROUND needs SDK 24+. RUN_ANY_IN_BACKGROUND needs SDK 28+ (Android 9+). POST_NOTIFICATION and the POST_NOTIFICATIONS permission need SDK 33+ (Android 13+). Never run an op on a version that does not have it.
+  - App standby buckets ("am get-standby-bucket" / "am set-standby-bucket") need SDK 28+ (Android 9+). The "restricted" bucket needs SDK 30+ (Android 11+); on SDK 28-29 use only the two background app-ops for Group C. On SDK 24-27 Group C uses only RUN_IN_BACKGROUND; on SDK 21-23 Group C is not available (give the manual Settings steps instead).
+  - "dumpsys thermalservice" needs SDK 29+ (Android 10+). "cmd package bg-dexopt-job" and "cmd package compile" need SDK 24+. On older versions skip the thermal reading and the Optimize step, and say so in one line.
+  - "top -b -n 1" works on SDK 24+ (toybox top). On older phones, or if "-b" is rejected, run adb shell "top -n 1 -m 10" instead.
   - "pm revoke" for runtime permissions needs SDK 23+. "pm set-permission-flags" / "pm clear-permission-flags" are used only on SDK 33+, where they exist.
   - "adb shell df /data": on SDK 21-23 the output has columns "Size Used Free Blksize" with values like "25.3G" instead of 1K-blocks. Convert G/M/K to MB yourself (1G = 1024M), and say in the report that old Android rounds these numbers, so changes under about 100 MB cannot be measured there.
   - "adb shell uptime" output differs by version (older phones print "up time: ..."). Always also read "adb shell cat /proc/uptime" (the first number is seconds since boot) and use that number for comparisons.
@@ -102,7 +108,8 @@ Run each of these. An empty result is normal and only means "not this skin":
   adb shell getprop ro.build.version.oplusrom.display  (ColorOS base version on OPPO / realme / OnePlus)
   adb shell getprop ro.vendor.oplus.market.name     (OPPO / realme / OnePlus marketing name, for example "realme P4R 5G")
   adb shell getprop ro.product.marketname           (marketing name on some other brands)
-  adb shell getprop ro.vivo.os.version              (vivo Funtouch / OriginOS)
+  adb shell getprop ro.vivo.os.version              (vivo Funtouch / OriginOS / vOS)
+  adb shell getprop ro.vivo.os.name                 (vivo skin name: "Funtouch", "OriginOS" or "vos". Read the skin name from here; never guess it from the Android version. Tested on vivo V2356 / Android 16: "vos", that is vOS 7)
   adb shell getprop ro.build.version.emui           (Huawei EMUI)
   adb shell getprop ro.build.version.magic          (Honor MagicOS)
   adb shell getprop ro.oxygen.version               (older OnePlus OxygenOS)
@@ -125,11 +132,12 @@ Then:
 PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
 =====================================================================
 1. Save these outputs into files in the current folder:
-     adb shell pm list packages -f -u   ->  packages_before_all.txt   (includes apps already removed for user 0)
-     adb shell pm list packages         ->  packages_before.txt       (apps installed for me now)
-     adb shell pm list packages -s      ->  packages_before_system.txt
-     adb shell pm list packages -3      ->  packages_before_downloaded.txt
-     adb shell pm list packages -d      ->  packages_before_disabled.txt
+     adb shell pm list packages --user 0 -f -u   ->  packages_before_all.txt   (includes apps already removed for user 0)
+     adb shell pm list packages --user 0         ->  packages_before.txt       (apps installed for me now)
+     adb shell pm list packages --user 0 -s      ->  packages_before_system.txt
+     adb shell pm list packages --user 0 -3      ->  packages_before_downloaded.txt
+     adb shell pm list packages --user 0 -d      ->  packages_before_disabled.txt
+   (If "--user" is rejected on a very old phone, run the same commands without it and say so.)
    Count the lines in each file and write the counts down. These are the "apps before" numbers.
    (If you cannot write files, tell me to save each output myself, and write the counts in the chat.)
    From packages_before_all.txt (it shows each package's file path), mark every package that is in packages_before_downloaded.txt as "downloaded-type". This includes preinstalled apps whose path starts with /data/app, /product/data-app, /cust/app, /my_preload, /my_stock or /my_product (for example /my_product/del-app and /my_product/del-app-pre on OPPO; Google Fitbit and OPPO AI Studio were there on an OPPO K14) (for example partner games, Xiaomi's Notes, Calendar or Weather on some phones, and OPPO / realme apps in /my_stock/del-app or /my_preload/del-app). On a phone with one user, "pm uninstall --user 0" deletes a downloaded-type app completely. "install-existing" cannot bring it back, only the Play Store or a factory reset can. Tested on HyperOS 3 / Android 16: 18 downloaded-type apps were removed, and packages_all went from 434 to 416. Tested on realme UI 7 / Android 16: apps in /my_stock/del-app and /my_preload/del-app (Backup & Restore, realme Community, preinstalled games) were deleted completely too, and packages_all went from 446 to 426 over two rounds.
@@ -167,7 +175,18 @@ PHASE 2: INVENTORY, SAFETY NET AND "BEFORE" MEASUREMENTS
    a. adb shell uptime            ->  uptime_before.txt   (how long the phone has been on)
    b. adb shell dumpsys meminfo   ->  meminfo_before.txt
    c. adb shell dumpsys battery   ->  battery_before.txt
-   From meminfo_before.txt, record "Total RAM", "Free RAM" and "Used RAM", and the PSS of every process (you need these in Phase 7 to work out how much RAM the removed apps were using).
+   From meminfo_before.txt, record "Total RAM", "Free RAM" and "Used RAM", and the PSS of every process (you need these in Phase 7 to work out how much RAM the removed apps were using). Always quote PSS ("Total PSS by process"). Never quote RSS, shared or "private dirty" memory as an app's RAM use.
+
+5. CPU and heat snapshot (read-only). RAM lists miss apps that are stuck using the processor in the background, which heats the phone and slows it down:
+     adb shell "top -b -n 1 -m 10"                                     ->  top_before.txt
+     adb shell "dumpsys thermalservice"                                ->  thermal_before.txt   (SDK 29+)
+     adb shell "cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq"   ->  cpufreq_before.txt
+   From top_before.txt, note every app process (not system_server, surfaceflinger, kernel threads or "top" itself) using more than about 30% CPU. From thermal_before.txt, note "Thermal Status" (0 = none, 1 = light, 2 = moderate, 3 or more = severe). If the cpufreq file cannot be read, write "not measured" and continue. A single snapshot can catch a short spike, so if an app looks busy, run top once more after adb shell sleep 10 and only report it if it is busy both times.
+   Reported on a Samsung Galaxy A33 5G / One UI 8 / Android 16: Link to Windows (com.microsoft.appmanager) used 50-144% CPU all the time, the thermal status was 2, and the big CPU cores were held at 533 MHz. In Phase 4, list such apps under "Busy in the background" with the numbers you measured, and offer the Group C action (or uninstall, if it is in Group A or B). Never offer to change a PROTECTED app for this; just tell me what you saw.
+
+6. Background and optimization state (read-only):
+     adb shell dumpsys package dexopt     ->  dexopt_before.txt   (SDK 24+; count packages per compiler filter: "verify", "speed-profile", "speed", other)
+     For each Group C candidate (do this once the Group C list exists in Phase 3): adb shell am get-standby-bucket <package> (SDK 28+) and adb shell cmd appops get <package> RUN_ANY_IN_BACKGROUND (SDK 28+) / RUN_IN_BACKGROUND (SDK 24+). Record the values: the rollback needs them.
 
 =====================================================================
 PHASE 3: BUILD THE CANDIDATE LIST (read-only)
@@ -267,7 +286,7 @@ Everything else installed that UAD-ng rates Recommended, Advanced or Expert:
 - Advanced: features some people use (OEM assistants, duplicate apps, Google apps like YouTube Music). Action: uninstall for user 0.
 - Expert: action "disable" only (pm disable-user), never uninstall. (On SDK 21-22, where disabling needs root, "hide" with pm hide --user 0 instead; it is just as reversible.)
 
-UAD-ng also rates many popular apps "Recommended", for example WhatsApp, Netflix, Google Pay / Wallet, Gmail, Google Photos, Maps, YouTube, Drive and Files by Google. Uninstalling without -k deletes their data (chats, notes, downloads), so a reply like "all Recommended" must never remove them by accident. Put these, messaging, banking and payment apps, the phone maker's everyday tools (calculator, clock, notes, file manager, sound recorder, screen recorder), and anything in packages_before_downloaded.txt that I may have installed myself (but NOT the partner preloads listed below, such as Amazon, Facebook, Instagram, Spotify, games and short-video apps: those go in Recommended), in a separate list called "Probably yours: not suggested". It is not part of any tier, and you remove an app from it only if I name it.
+UAD-ng also rates many popular apps "Recommended", for example WhatsApp, Netflix, Google Pay / Wallet, Gmail, Google Photos, Maps, YouTube, Drive and Files by Google. Uninstalling without -k deletes their data (chats, notes, downloads), so a reply like "all Recommended" must never remove them by accident. Put these, messaging, banking and payment apps, the phone maker's everyday tools (calculator, clock, notes, file manager, sound recorder (it may also handle call recording), screen recorder, weather, music), any app that powers a home-screen widget, step counting, health tracking or a gesture I might use (for example vivo's Jovi steps service com.vivo.assistantfunction, which feeds the steps widget), Google Maps, Google Photos, YouTube, Gmail, Calendar, Drive, Gemini and Messages, and anything in packages_before_downloaded.txt that I may have installed myself (but NOT the partner preloads listed below, such as Amazon, Facebook, Instagram, Spotify, games and short-video apps: those go in Recommended), in a separate list called "Probably yours: not suggested". It is not part of any tier, and you remove an app from it only if I name it.
 
 ALWAYS "Probably yours" (India and everywhere), even when the app was preinstalled as a partner app of the downloaded type:
 - UPI, payment, wallet and banking apps, for example Google Pay (com.google.android.apps.nbu.paisa.user), BHIM (in.org.npci.upiapp), Amazon Pay, MobiKwik, CRED, and any bank's own app. Removing one logs me out, and setting it up again can need the SIM linked to my bank and an OTP. Exception: a preinstalled Paytm or PhonePe, and loan apps, are partner preloads (see below), not "Probably yours".
@@ -305,6 +324,31 @@ KEEP FOR SAFETY even when UAD-ng rates them Recommended or Advanced, and name th
 - Parts of the OEM home screen, lock screen or quick settings (for example miui.systemui.plugin, launcher "res" or "layout" packages, always-on display, theme manager, wallpaper pickers).
 
 ---------------------------------------------------------------------
+GROUP C: KEEP, BUT STOP RUNNING IN THE BACKGROUND (optional, never pre-selected)
+---------------------------------------------------------------------
+For apps I may want to keep but rarely open, which still wake up in the background for offers, alarms, jobs and network (for example a second operator app, food delivery, shopping, travel, games, news, short-video and AI chat apps, and apps found busy in Phase 2, step 5). They stay installed and open normally when I tap them; they just cannot run while I am not using them.
+- Candidates: downloaded-type apps (Phase 2) and "Probably yours" apps of those kinds. Number them C1, C2 ...
+- Never offer: PROTECTED apps, messaging, banking / UPI / payment, alarm and clock, step or health trackers, accessibility services, VPN, keyboards, launchers, device admins, or any app whose notifications I clearly rely on. Mark email apps "notifications may arrive late". An app whose standby bucket is 5 (exempted) or 50 (never) is left out.
+- Action "[bg-restrict]" (by SDK, see ANDROID VERSION DIFFERENCES):
+     adb shell cmd appops set <package> RUN_ANY_IN_BACKGROUND ignore    (SDK 28+)
+     adb shell cmd appops set <package> RUN_IN_BACKGROUND ignore        (SDK 24+)
+     adb shell am set-standby-bucket <package> restricted               (SDK 30+; SDK 28-29: skip this line)
+  Rollback: the recorded app-op modes, and am set-standby-bucket <package> <recorded bucket name>. Map the number from "am get-standby-bucket" to a name: 10 active, 20 working_set, 30 frequent, 40 rare, 45 restricted. If the recorded bucket was already 45, write no bucket rollback line.
+  Check: both app-ops read back "ignore", and am get-standby-bucket <package> prints 45.
+- Say once, above the list: "Notifications from these apps may arrive late or only when you open the app."
+- Also the fallback in Phase 5 when the phone refuses both uninstalling and disabling an app (tested on vivo V2356 / vOS 7 / Android 16: the two app-ops worked on all 18 apps that refused uninstall, disable and suspend).
+Reported on a Samsung Galaxy A33 / One UI 8 / Android 16: "am set-standby-bucket <package> restricted" stopped background alarms, jobs and network for MyJio, Airtel and shopping apps without removing them.
+
+---------------------------------------------------------------------
+OPTIMIZE (optional, never pre-selected, offered after Groups A-C)
+---------------------------------------------------------------------
+After debloating, apps can still stutter if Android has not compiled them yet (they run in "verify" mode until the overnight job runs, and that job is often skipped when the phone is warm or not charging).
+- O1 "Optimize apps now" (SDK 24+): adb shell cmd package bg-dexopt-job. It runs the same job Android runs overnight, takes about 5-20 minutes, and the phone is warm and slower while it runs. Show the dexopt numbers from Phase 2, step 6 on its line (for example "190 apps not fully optimized yet"). No rollback is needed: it only prepares apps the normal way.
+- O2 "Speed-compile named apps" (only if I name laggy apps, at most about 10): adb shell cmd package compile -m speed -f <package>. Rollback: adb shell cmd package compile --reset <package>. Tell me the trade-offs: it uses more storage, and Android returns the app to its normal mode when the app updates, and may do so during its overnight job. Never run "compile -m speed -a" (all apps). Never compile a PROTECTED app I did not name, except com.android.systemui and the home-screen app when I say the notification shade, gestures or home screen stutter. Reported on a Samsung Galaxy A33 / One UI 8 / Android 16 (Exynos 1280): speed-compiling com.android.systemui, the launcher and the lock-screen / fingerprint packages fixed notification-shade, gesture and lock-screen stutter.
+- Measure, do not guess: before and after O1 or O2, pick two apps I use (Chrome and YouTube if installed), and for each run 5 times: adb shell am force-stop <package>, then adb shell am start -W -n <package>/<launcher activity from resolve-activity>. Use the median "TotalTime". On Windows, quote the -n argument when the activity name contains "$". Tested on vivo V2356 / vOS 7 / Android 16 after bg-dexopt-job: Chrome cold start 1,562 -> 1,296 ms (-17%), YouTube 999 -> 677 ms (-32%).
+- Animations: never change animation scales; many phones (tested: vivo) reset them to 1x when Developer options is turned off. Tell me instead about Settings > Accessibility > Remove animations, which works without Developer options.
+
+---------------------------------------------------------------------
 HARD DENYLIST (applies to every group)
 ---------------------------------------------------------------------
 Never uninstall, disable or restrict these, even if a list says they are safe:
@@ -340,11 +384,13 @@ Show:
    Mark every downloaded-type package (Phase 2) with a "†". Explain "†" once, above the lists: "The undo file cannot restore it. Reinstall it from the Play Store." In review.md, write this in its "What I lose" column.
    On Xiaomi HyperOS, mark Xiaomi's own user-facing apps (for example ShareMe, Scanner, Compass, Weather, Notes, Calculator, Screen Recorder) as "HyperOS may refuse this (Failure [-1000])". Tested on HyperOS 3: all seven were refused.
    On OPPO / realme / OnePlus, mark com.heytap.market, com.nearme.gamecenter, com.nearme.instant.platform and com.oplus.olc as "may refuse this (Failure [DELETE_FAILED_INTERNAL_ERROR])". Tested on realme UI 7 / Android 16: all four were refused. On vivo / iQOO (OriginOS), mark com.vivo.magazine the same way: it was refused. Also mark these vivo apps as "OriginOS may refuse this (Failure [DELETE_FAILED_USER_RESTRICTED])". Tested on OriginOS 6 / Android 16, all were refused: com.vivo.appstore, com.vivo.pushservice, com.vivo.assistant, com.vivo.assistantfunction, com.bbk.iqoo.logsystem, com.bbk.cloud, com.vivo.doubleinstance, com.vivo.floatingball, com.vivo.gamewatch, com.vivo.minscreen, com.vivo.SmartKey, com.vivo.vms, com.vivo.vtouch, com.vivo.weather.provider. On the same phone com.vivo.weather, com.vivo.browser, com.vivo.easyshare, com.vivo.compass and most vivo widgets uninstalled fine.
+   On vivo vOS 7 (ro.vivo.os.name = vos), mark these as "vOS may refuse uninstall AND disable; background restriction works". Tested on vivo V2356 / Android 16: com.vivo.cota, com.vivo.pushservice, com.vivo.globalsearch, com.vivo.assistant, com.vivo.weather.provider, the vivo video editor, com.bbk.cloud, the vivo UPnP server, com.vivo.vtouch, com.vivo.gamewatch, com.vivo.floatingball, com.vivo.minscreen, com.android.bbkmusic, com.vivo.hiboard, com.bbk.iqoo.logsystem and the vivo fuel summary refused both "pm uninstall" (DELETE_FAILED_USER_RESTRICTED) and "pm disable-user" ("Cannot disable ... no root permission"); the vivo game cube and ring-clip apps refused disable. "pm suspend" was refused too. Match the unnamed ones by the name part shown (videoeditor, upnpserver, fuelsummary, gamecube, ringclip).
    On SDK 21-25 (Android 5 to 7.1), say once, above the lists, that preinstalled system apps will be disabled (Android 6-7) or hidden (Android 5) instead of uninstalled, so they can be fully undone, and show "[disable]" or "[hide]" on those lines.
    On Android 17 or newer (SDK 37+), say once, above the lists, that the phone may refuse every uninstall of a preinstalled app (see Phase 1), so these lists may end up being disabled instead of uninstalled.
    Mark every "already off" app (Phase 2) as "(already off)". Its everyday line should say so, because it is not running now and removing it changes little.
    Partner placeholders: some preinstalled partner apps have no app icon. resolve-activity with category LAUNCHER prints "No activity found", and they are often already off. Tested on Motorola / Android 17: com.ertanto.kompas.official and com.zte.iptvclient.android.idmnc. List them in Recommended as partner preloads (AI), marked "(already off)" where that applies.
-   Say once, above the lists: "If the phone refuses some apps, I keep going and ask you at the end whether to disable them instead."
+   Say once, above the lists: "If the phone refuses some apps, I keep going and ask you at the end what to do. You can decide now instead by adding 'if refused: disable', 'if refused: restrict' (stop it running in the background, Group C action) or 'if refused: leave' to your reply."
+   Then Group C (C1, C2 ...) and the Optimize items (O1, O2) in the same one-line format, under their own headings, NOT pre-selected. Under "Busy in the background", show any app found busy in Phase 2, step 5 with the measured CPU % and thermal status.
 3. If no Glance or lock-screen feed was found, say so clearly, and list the package names you checked for.
 4. The PROTECTED apps from Phase 2, so I know they will be kept.
 5. The "Probably yours: not suggested" list and the "left out for safety" list from Phase 3, as short comma-separated lists of everyday app names (package names only in review.md).
@@ -357,7 +403,8 @@ Then STOP. Do not change anything until I reply. Examples of replies I might giv
   "go + all Recommended"               = Group A and all of Group B Recommended
   "go + Recommended except 4 and 9"
   "go + Advanced 2, 5"
-Approval for one group or tier is not approval for another. If my reply is unclear, ask again.
+  "go + all Recommended + C1-C4 + O1, if refused: restrict"
+Approval for one group or tier is not approval for another. Group C and the Optimize items are applied only if I name them. If I add an "if refused" choice, use it in Phase 5 and do not ask the end-of-pass question for those items. If my reply is unclear, ask again.
 
 =====================================================================
 PHASE 5: APPLY CHANGES ONE PACKAGE AT A TIME, ROLLBACK FIRST
@@ -379,6 +426,8 @@ For EACH approved package, in this exact order:
                             for an app that was already off before the session: the undo file would turn it on.)
      restricted or muted:  adb shell cmd appops set <package> <op> <the mode you recorded before>
                            (one line per op you changed; on SDK 21-23 write "appops set" without "cmd")
+     bg-restricted (C):    the app-op lines above, plus adb shell am set-standby-bucket <package> <recorded bucket name>
+     speed-compiled (O2):  adb shell cmd package compile --reset <package>
 2. THEN make the change:
      uninstall:  adb shell pm uninstall --user 0 <package>
                  (no -k flag, so the app's data and cache are deleted and the storage is actually freed;
@@ -390,6 +439,7 @@ For EACH approved package, in this exact order:
      hide:       adb shell pm hide --user 0 <package>           (SDK 21-22 only)
      restrict:   adb shell cmd appops set <package> SYSTEM_ALERT_WINDOW ignore
      mute:       adb shell cmd appops set <package> <op> ignore   (for each op in A4 that exists on this SDK)
+     bg-restrict: the Group C commands (two app-ops and the standby bucket, by SDK)
      (SDK 21-23: "appops set" / "appops get" without "cmd", everywhere in this phase.)
 3. Check the result:
      uninstall must print "Success".
@@ -407,12 +457,13 @@ For EACH approved package, in this exact order:
      - "Failure: package is non-disable" (tested on Motorola / Android 17: com.motorola.paks.notification, com.motorola.ccc.devicemanagement, com.amazon.appmanager): the system protects this app from being uninstalled and marks it as one that cannot be disabled. Do NOT offer "disable instead" for it. Report it as "protected by the phone", and suggest turning off its notifications by hand if it sends any.
      - "pm disable-user" printing "new state: default" instead of "new state: disabled-user": the phone refused to disable it. Report it as "protected by the phone" and do not offer another fallback. Tested on OPPO K14 / ColorOS 17: com.nearme.instant.platform, com.nearme.instant.card, com.oplus.olc, com.heytap.market.
      - "java.lang.SecurityException: uid 2000 does not have android.permission.MANAGE_APP_OPS_MODES" from "cmd appops set": the skin blocks app-op changes from ADB (see the ColorOS note above A3). Give me the manual Settings steps.
-     - pm disable-user on an app that is already off: it fails with "java.lang.SecurityException: Shell cannot change component state for null to 3" (tested on Motorola / Android 17). This is not dangerous. The app stays off. Do not offer the disable fallback for apps that are "already off" (Phase 2), and never add an enable rollback line for them.
+     - "java.lang.SecurityException: Shell cannot change component state for null to 3" from pm disable-user. Two causes, both harmless: (1) the app was already off (tested on Motorola / Android 17); (2) the phone protects the app from being disabled although it was on (reported on Samsung Galaxy A33 / One UI 8 / Android 16: com.samsung.android.aremoji and com.samsung.android.app.spage). Check packages_before_disabled.txt to tell them apart. Case 1: the app stays off, do nothing, never add an enable rollback line. Case 2: report it as "protected by the phone" and offer the background-restriction fallback (Group C action) instead of "disable".
+     - "java.lang.SecurityException: Cannot disable <package> no root permission" from pm disable-user, or "Cannot suspend <package>, no root permission" from pm suspend (tested on vivo V2356 / vOS 7 / Android 16): the phone protects the app. It stays unchanged. Do not try pm suspend. Offer the background-restriction fallback (Group C action), which worked on all 18 such apps on that phone.
      - POST_NOTIFICATION reads back as "allow" on Android 13+, or SYSTEM_ALERT_WINDOW reads back as "default" or "allow" instead of "ignore": the system overrode the change (tested on realme UI 7: com.oplus.themestore read back "allow"). Log it as failed and, at the end, give me the manual Settings steps (or offer to uninstall the app instead, if it is in Group B).
    Any other failure is also logged as failed. Then continue, and explain it in the end-of-pass summary. If you had to stop early and I say to continue, resume from the next package. Do not redo packages that are already done.
 4. Add a line to removal_log.csv.
 
-Order: Group A first, then Group B Recommended, then Advanced, then Expert, all in one pass. Do NOT restart the phone between groups. Keep going until every approved change has been tried.
+Order: Group A first, then Group B Recommended, then Advanced, then Expert, then Group C, all in one pass. The Optimize items are run later, after the restart (Phase 6, step 8). Do NOT restart the phone between groups. Keep going until every approved change has been tried.
 
 AT THE END OF THE PASS (the only question in Phase 5):
 Show one short summary in plain words:
@@ -420,7 +471,9 @@ Show one short summary in plain words:
 - one line per failed item: app name, why it failed, and a suggested fallback.
 Fallbacks:
 - A refused uninstall of an A1 feed, an A2 ad app or a Group B app: "disable instead" (pm disable-user --user 0; on SDK 21-22 "hide instead" with pm hide --user 0, because disabling needs root there), unless it is rated Unsafe, is on the HARD DENYLIST, is "already off" (Phase 2), or was refused with "package is non-disable". Tested on OriginOS 6: com.vivo.magazine refused to uninstall but "pm disable-user" worked, and the lock screen then showed a normal wallpaper. Tested on Motorola / Android 17: 47 of the refused apps were disabled this way. Tested on Samsung One UI 9 / Android 17: all 71 refused apps, including Glance (com.samsung.android.dynamiclock), were disabled this way, and none turned itself back on after the restart.
-  In the summary, give three numbers: apps to disable now, apps that were already off (nothing to do), and apps protected by the phone (nothing possible). Say that disabling frees RAM but not storage.
+  In the summary, give four numbers: apps to disable now, apps that were already off (nothing to do), apps protected from disabling that can still be stopped from running in the background, and apps protected by the phone (nothing possible). Say that disabling frees RAM but not storage.
+- A refused disable (from the fallback above, an Expert item, or the "no root permission" / "null to 3 on an app that was on" results): "stop it running in the background instead" (Group C action, rollback lines first), unless it is PROTECTED, on the HARD DENYLIST, or an app whose background work I need (see Group C "Never offer").
+- If I gave an "if refused" choice in Phase 4, apply it here without asking: "disable" = the disable fallback, then the background-restriction fallback if disabling is refused too; "restrict" = go straight to the background-restriction fallback; "leave" = log it and do nothing.
 - An A4 store: no question. It was already muted automatically (see A4). Just report it as "muted instead".
 - A restriction or mute that the system undid: give the manual Settings steps.
 Then ask me ONE question, for example: "Disable the 5 refused apps instead? (all / none / numbers)". Apply only the fallbacks I approve, rollback lines first (adb shell pm enable --user 0 <package>), with result checks as above. Then go to Phase 6. If nothing failed, go straight to Phase 6 without asking.
@@ -431,9 +484,10 @@ PHASE 6: ONE RESTART, THEN VERIFY
 1. Tell me the phone will now restart once, then run: adb reboot
 2. adb wait-for-device
 3. adb shell getprop sys.boot_completed   (repeat until it prints 1)
+   Right away, before asking me anything, run adb shell pm list packages --user 0 -d and check that every app disabled with "Success" is still in it. If one turned itself back on (Glance often does: tested twice on Motorola / Android 17 with com.glance.lockscreenM), retry the same disable once now (I already approved it; rollback line first), check again with adb shell pm list packages --user 0 -d <package> after adb shell sleep 30, and tell me the Settings path to switch that feature off by hand (Settings > Lock screen > Glance on Motorola). Phase 7, step 4 checks it again.
 4. Ask me to unlock the phone once.
 5. Ask me to check each of these on the phone and tell you the result:
-     unlock (PIN, fingerprint, face) | lock screen shows a normal wallpaper and no stories feed | home screen | make AND receive a call | send AND receive an SMS | mobile data | Wi-Fi | Bluetooth | camera photo and video | gallery opens and shows my photos | a notification from a messaging app | Play Store opens and can update an app | alarms | banking or payment apps open | system update screen opens
+     unlock (PIN, fingerprint, face) | lock screen shows a normal wallpaper and no stories feed | home screen and its widgets | make AND receive a call | send AND receive an SMS | mobile data | Wi-Fi | Bluetooth | camera photo and video | gallery opens and shows my photos | a notification from a messaging app | Play Store opens and can update an app | alarms | banking or payment apps open | system update screen opens
    If a banking or UPI app refuses to open with a message about Developer options, USB debugging or a "rooted / unsafe device", that is the app's own security check reacting to Developer options being on. It is not caused by debloating: do not undo anything for it. Tell me it will open once I turn off Developer options at the very end (see Phase 7), and count the check as passed.
 6. OPPO / realme / OnePlus only: ALWAYS do this when App Market (com.heytap.market or com.oppo.market) is still installed (also when it was muted or disabled). App Market shows a "Security test" page with an ad and sponsored apps after EVERY app I install from the Play Store, and a home-screen "Hot apps & hot games" folder. Both are switches inside App Market's own settings. Group A already approves turning them off, so do it yourself, without asking, while the phone is unlocked after the restart:
      a. Open the screen: adb shell am start -n com.heytap.market/com.oplus.market.setting.ExpSettingActivity
@@ -457,11 +511,17 @@ PHASE 6: ONE RESTART, THEN VERIFY
 7. vivo / iQOO only: ALWAYS do this when V-Appstore (com.vivo.appstore) is still installed (also when it was muted). V-Appstore puts sponsored "Apps" and "Games" tiles on the home screen (tapping one opens com.vivo.appstore/.desktopfolder.DesktopFolderNewAppActivity, a page of "Get" buttons and "Install 12 apps"). Group A already approves turning them off, so do it yourself while the phone is unlocked, with the same safety rules as step 6 (read the screen first, tap only the named switches, confirm afterwards, fall back to asking me):
      a. Open V-Appstore's settings: adb shell am start -n com.vivo.appstore/.activity.SettingsActivity
         If that fails: open V-Appstore from its home-screen icon, go to the "Manage" tab, and tap the gear icon at the top right (it has no label in the screen XML).
+        On vOS 7 the settings screen is not exported, so "am start" fails with a "Permission Denial" / "not exported" error (tested on vivo V2356 / Android 16). That is not a problem: use the icon route above, or ask me to turn the two switches off by hand.
      b. Turn OFF "Create Apps on the home screen" and "Create Games on the home screen" (they are at the bottom; scroll if needed). After each tap, a pop-up says "App recommendations provided by V-Appstore will be unavailable" with "Close" and "Cancel": tap "Close" (that confirms turning it off), then read the screen again and confirm the switch shows checked="false".
      c. Go home and check every home page for nodes with content-desc exactly "Apps" or "Games" that are NOT folders (a folder's content-desc contains ",Folder,"). Tested on a vivo T5 (V2607) / OriginOS 6 / Android 16: after both switches were off, both tiles were gone from the home screen. If one is still there, ask me to long-press it and remove it.
      Log both switches in removal_log.csv and the report, and add the same kind of comment line to the rollback files as in step 6.
      Fallback, with no tapping at all: if a title is not found (for example the phone is not in English, or this App Market version differs), the screen is locked, the settings screen did not open, or anything else is on screen (a pop-up, a sign-in or terms page), ask me to turn the two switches off by hand (App Market > Settings), and wait until I confirm.
      In the rollback files, add a comment line (REM in rollback.bat, # in rollback.sh) saying these two App Market switches were turned off and can be turned back on in App Market > Settings. List both switches and their result in the report. Tested on an OPPO CPH2869 / ColorOS 17 / Android 17 (India, App Market 26.8.60_IN): the after-install ad page came from com.heytap.market (screen com.oplus.exp.installed.rec.core.InstalledRecommendActivity), not from Phone Manager, and the "Security test for apps not from App Market" switch was on by default. Reading the screen with uiautomator and tapping that row with "input tap" turned it off, and the next screen read showed it off.
+8. Optimize, only if I approved O1 or O2, while the phone is unlocked and after the step 5 checks passed:
+     a. Run the "before" launch benchmark (see OPTIMIZE in Phase 3) and save it as launch_before.txt.
+     b. O1: adb shell cmd package bg-dexopt-job (it can take 5-20 minutes; tell me first, and keep the phone connected). O2: adb shell cmd package compile -m speed -f <package> for each approved app, rollback line first; it must print "Success".
+     c. Run the same benchmark again and save it as launch_after.txt. Save adb shell dumpsys package dexopt as dexopt_after.txt.
+     If the phone gets hot or a command fails, stop the Optimize step, log it, and continue with Phase 7.
 
 If something broke (this is the only case where another restart is allowed):
 1. Undo the newest group or tier with its rollback commands (Expert first, then Advanced, then Recommended, then Group A).
@@ -477,15 +537,17 @@ Do NOT restart again. Use the restart from Phase 6:
      adb shell uptime                  ->  uptime_after.txt
      adb shell dumpsys meminfo         ->  meminfo_after.txt
      adb shell df /data                ->  df_after.txt
-     adb shell pm list packages        ->  packages_after.txt
-     adb shell pm list packages -s     ->  packages_after_system.txt
-     adb shell pm list packages -3     ->  packages_after_downloaded.txt
-     adb shell pm list packages -d     ->  packages_after_disabled.txt
-     adb shell pm list packages -f -u  ->  packages_after_all.txt
+     adb shell pm list packages --user 0        ->  packages_after.txt
+     adb shell pm list packages --user 0 -s     ->  packages_after_system.txt
+     adb shell pm list packages --user 0 -3     ->  packages_after_downloaded.txt
+     adb shell pm list packages --user 0 -d     ->  packages_after_disabled.txt
+     adb shell pm list packages --user 0 -f -u  ->  packages_after_all.txt
+     adb shell "top -b -n 1 -m 10"              ->  top_after.txt        (only if Phase 2, step 5 found a busy app or a thermal status of 2 or more)
+     adb shell "dumpsys thermalservice"         ->  thermal_after.txt    (same condition, SDK 29+)
 3. Compare packages_before.txt with packages_after.txt. Every package that disappeared must be in removal_log.csv with the result "Success". Name any package that disappeared without being in the log (for example an app I uninstalled on the phone myself during the session), and do not count it as removed by you. Tested on realme UI 7: one game disappeared that no command had removed.
 4. Check that every app disabled with the result "Success" in removal_log.csv is in packages_after_disabled.txt (on SDK 21-22, check instead that every hidden app is still missing from packages_after.txt). An app that is no longer disabled was turned back on by the phone during the restart. Tested on Motorola / Android 17: com.glance.lockscreenM was "disabled-user" before the restart and enabled again after it, while the other 46 stayed disabled. Then stop and tell me (this is unexpected). Offer ONE retry of the same disable, which I already approved (rollback line first), and check again with adb shell pm list packages -d <package> after adb shell sleep 30. Do not restart again for this. Also give me the Settings steps to turn the feature off, because a setting I change myself sticks better. Save packages_after_disabled.txt again after the retry so the report uses the final count. Tested: the retry worked and Glance stayed off.
 
-Then write the final report in the chat AND save it as report.md. It MUST contain this table, filled only with measured numbers:
+Then write the final report in the chat AND save it as report.md. Show the full table in the chat yourself, without waiting for me to ask: saving report.md alone is not enough, and Phase 8 must not start until I have seen the table in the chat. It MUST contain this table, filled only with measured numbers:
 
   | Measure                               | Before | After | Change |
   |---------------------------------------|--------|-------|--------|
@@ -500,6 +562,8 @@ Then write the final report in the chat AND save it as report.md. It MUST contai
   | Free RAM (whole phone)                |        |       |        |
   | Phone on-time when measured (uptime)  |        |       |        |
 
+Add these rows only when they apply: "RAM used by the background-restricted apps (PSS)" (Group C; before and after, because they can still run when opened), "App launch time, <app> (median of 5)" for each benchmarked app (Optimize), and "Busiest app CPU % / thermal status" (Phase 2, step 5).
+
 Also report:
 - Storage freed, two ways:
   a. Measured: the change in "Used" on /data between df_before.txt and df_after.txt.
@@ -511,7 +575,9 @@ Also report:
      Count only apps that are really gone or still disabled when you measure. Do NOT count muted app stores (they can still run when opened), apps that were already off before the session, or an app the phone turned back on (step 4). Show those separately. Tested on Motorola / Android 17: the main number was 246.1 MB. Glance (177.6 MB, turned back on and then disabled again) and the muted Indus Appstore (103.5 MB) were listed separately.
   b. Whole-phone change: the change in "Used RAM" between meminfo_before.txt and meminfo_after.txt.
   Explain that "before" was measured without a restart and "after" shortly after one (compare the uptimes). A freshly restarted phone usually uses less RAM anyway, so the whole-phone change includes the effect of the restart and must not be presented as RAM freed by debloating alone. Android also reuses free RAM for caching, so a difference under about 100 MB is within normal variation. "Free RAM" is often much lower shortly after a restart, because Android has not refilled its caches yet (tested on OPPO K14: 778 MB less free, while Used RAM fell 55 MB). Do not present this as a loss.
-- Counts: how many packages were uninstalled, disabled, restricted (pop-ups) and muted (app stores), and how many failed.
+- Counts: how many packages were uninstalled, disabled, restricted (pop-ups), muted (app stores) and background-restricted (Group C and fallbacks), and how many failed.
+- Optimize (if run): the launch times before and after, the dexopt counts before and after, and that a speed-compiled app returns to normal when it updates. Say that one benchmark of two apps is a sample, not a guarantee for every app.
+- A tip I can do myself: Settings > Accessibility > Remove animations (or "Remove animations" in Settings search) makes the phone feel faster and, unlike the Developer options animation scales, stays on after Developer options is turned off.
 - Glance and lock-screen feeds: which were removed, which were restricted, and for any that could not be removed, the exact Settings steps to switch them off on this phone. Typical paths, which you should adapt to this phone's skin and version:
     OPPO / realme (ColorOS / realme UI):  Settings > Wallpapers & style (or Lock screen) > Lock screen magazine (or Glance) > turn off, and choose a normal lock-screen wallpaper.
     OnePlus (OxygenOS):                   Settings > Wallpapers & style (or Lock screen) > Lock screen magazine / Glance > turn off.
@@ -565,7 +631,9 @@ ALLOWED COMMANDS
 Read-only:
   adb version | adb devices -l | adb kill-server | adb start-server | adb wait-for-device
   adb shell getprop <property>
-  adb shell pm list packages [-f] [-u] [-s] [-3] [-d] | adb shell pm list users
+  adb shell pm list packages --user 0 [-f] [-u] [-s] [-3] [-d] | adb shell pm list users
+  adb shell "top -b -n 1 -m 10" | adb shell "dumpsys thermalservice" | adb shell "cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq"   (Phase 2 and 7: CPU and heat snapshot)
+  adb shell dumpsys package dexopt | adb shell am get-standby-bucket <package>
   adb shell cmd package resolve-activity ...
   adb shell settings get ...
   adb shell cmd role get-role-holders ... | adb shell telecom get-default-dialer
@@ -582,8 +650,8 @@ Read-only:
   adb shell uiautomator dump /sdcard/ui.xml | adb shell cat /sdcard/ui.xml | adb shell rm /sdcard/ui.xml   (Phase 6 step 6 only: reads the screen)
   adb shell input swipe ... | adb shell input tap <x> <y> | adb shell input keyevent KEYCODE_HOME   (Phase 6 step 6 only: scroll, tap one of the two named App Market switches, go home, and long-press / remove the "AppLong" and "GameLong" home-screen tiles)
   adb shell uptime | adb shell cat /proc/uptime
-  adb shell pm list packages <package>   (check whether one package is still installed)
-  adb shell pm list packages -d <package>   (check whether one package is still disabled)
+  adb shell pm list packages --user 0 <package>   (check whether one package is still installed)
+  adb shell pm list packages --user 0 -d <package>   (check whether one package is still disabled)
 Changes (Phase 5 only, after my approval):
   adb shell pm uninstall --user 0 <package>
   adb shell pm disable-user --user 0 <package>   (SDK 23+)
@@ -596,6 +664,11 @@ Changes (Phase 5 only, after my approval):
   adb shell pm revoke <package> android.permission.POST_NOTIFICATIONS   (A4 stores only)
   adb shell pm set-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed   (A4 stores only)
   adb shell dumpsys package <package>   (read-only: check the notification permission)
+  adb shell am set-standby-bucket <package> restricted   (Group C and its fallback only, SDK 30+)
+Optimize (Phase 6 step 8 only, and only if I approved O1 or O2):
+  adb shell cmd package bg-dexopt-job
+  adb shell cmd package compile -m speed -f <package>   (O2: only apps I named, never -a)
+  adb shell am force-stop <package> | adb shell am start -W -n <package>/<activity>   (launch benchmark only, for the two benchmark apps)
 Restore:
   adb shell cmd package install-existing --user 0 <package>   (SDK 26+, or SDK 23-25 if the probe found it)
   adb shell pm unhide --user 0 <package>                      (SDK 21-22)
@@ -603,6 +676,8 @@ Restore:
   adb shell cmd appops set <package> <op> <recorded mode>   (SDK 21-23: adb shell appops set <package> <op> <recorded mode>)
   adb shell pm clear-permission-flags <package> android.permission.POST_NOTIFICATIONS user-set user-fixed
   adb shell pm grant <package> android.permission.POST_NOTIFICATIONS
+  adb shell am set-standby-bucket <package> <recorded bucket name>
+  adb shell cmd package compile --reset <package>
 Other:
   adb reboot   (once, in Phase 6; again only if something broke and was undone, or once per extra round in Phase 8)
 
